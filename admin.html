@@ -153,6 +153,7 @@
       <div class="nav-item" onclick="showSec('clientes')" data-s="clientes"><span class="icon">🙍</span>Clientes</div>
       <div class="nav-item" onclick="showSec('catalogo')" data-s="catalogo"><span class="icon">📚</span>Catálogo</div>
       <div class="nav-item" onclick="showSec('config')" data-s="config"><span class="icon">⚙️</span>Configuración</div>
+      <div class="nav-item" onclick="showSec('proveedor')" data-s="proveedor"><span class="icon">📦</span>Pedido Proveedor</div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-chip">
@@ -300,6 +301,44 @@
         </div>
       </div>
     </div>
+
+    <!-- PEDIDO PROVEEDOR -->
+    <div class="section" id="sec-proveedor">
+      <div class="page-header">
+        <h2 class="page-title">Pedido al Proveedor</h2>
+        <p class="page-sub">Consolidá los ítems con precio cargado para hacer el pedido</p>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-head"><span class="card-title">🔍 Filtros</span></div>
+        <div style="padding:16px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select id="apFiltVend" onchange="buildAdminProveedor()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+            <option value="">Todas las vendedoras</option>
+          </select>
+          <select id="apFiltCamp" onchange="buildAdminProveedor()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+            <option value="">Todas las campañas</option>
+          </select>
+          <input type="date" id="apFiltDesde" onchange="buildAdminProveedor()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+          <input type="date" id="apFiltHasta" onchange="buildAdminProveedor()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+          <input type="text" id="apFiltProd" oninput="buildAdminProveedor()" placeholder="🔍 Buscar producto..." style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;min-width:180px;">
+        </div>
+        <div style="padding:0 20px 16px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm ghost" onclick="apSelAll(true)">✅ Seleccionar todos</button>
+          <button class="btn-sm ghost" onclick="apSelAll(false)">⬜ Deseleccionar todos</button>
+          <button class="btn-sm primary" onclick="imprimirAdminProveedor()">🖨️ Imprimir selección</button>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div id="ap-resumen" style="display:none;background:rgba(192,132,252,.1);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin-bottom:14px;font-size:13px;color:var(--text2);"></div>
+
+      <!-- Tabla -->
+      <div class="card">
+        <div id="ap-tabla"><div class="empty" style="padding:32px;">Cargando...</div></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -349,7 +388,8 @@
 
 <script>
 const ROOT={user:'root',pass:'Root.415263'};
-let SU='',SK='';
+const _DEFAULT_SU='https://yafxocedtrktdrplpvie.supabase.co',_DEFAULT_SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
+let SU=_DEFAULT_SU,SK=_DEFAULT_SK;
 let allPeds=[],allVends=[],allClis=[],allProds=[];
 
 function H(){return{'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK};}
@@ -373,6 +413,7 @@ function showSec(id){
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelector(`[data-s="${id}"]`).classList.add('active');
   if(id==='reportes')buildReportes();
+  if(id==='proveedor')buildAdminProveedor();
 }
 
 async function cargarTodo(){
@@ -590,76 +631,12 @@ async function guardarProdsAI(){
 
 // CONFIG
 function initCfg(){
-  SU=localStorage.getItem('violeta_supa_url')||'';SK=localStorage.getItem('violeta_supa_key')||'';
-  if(SU)document.getElementById('cfgUrl').value=SU;
-  if(SK)document.getElementById('cfgKey').value=SK;
-  document.getElementById('sqlCode').textContent=`-- Ejecutar UNA VEZ en Supabase → SQL Editor
-
-CREATE TABLE vendedoras (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nombre TEXT NOT NULL,
-  username TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  telefono TEXT,
-  activa BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE clientes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nombre TEXT,
-  dni TEXT,
-  telefono TEXT,
-  direccion TEXT,
-  activo BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE productos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nombre TEXT NOT NULL,
-  precio NUMERIC,
-  codigo TEXT,
-  campana TEXT,
-  categoria TEXT,
-  descripcion TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE pedidos (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  fecha TEXT,
-  campana TEXT,
-  productos TEXT,
-  nombre TEXT,
-  dni_cliente TEXT,
-  cliente_id UUID,
-  telefono TEXT,
-  pago TEXT,
-  direccion TEXT,
-  lugar TEXT,
-  notas TEXT,
-  estado TEXT DEFAULT 'pendiente',
-  total NUMERIC,
-  vendedora_id UUID,
-  vendedora_username TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Permisos acceso público
-ALTER TABLE vendedoras ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clientes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE productos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pedidos ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow_all" ON vendedoras FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all" ON clientes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all" ON productos FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all" ON pedidos FOR ALL USING (true) WITH CHECK (true);
-
--- Vendedora inicial (contraseña: Solvio.836)
-INSERT INTO vendedoras (nombre, username, password_hash, activa)
-VALUES ('Ruth', 'Ruths', 'U29sdmlvLjgzNg==', true);`;
+  SU=localStorage.getItem('violeta_supa_url')||_DEFAULT_SU;
+  SK=localStorage.getItem('violeta_supa_key')||_DEFAULT_SK;
+  const el_url=document.getElementById('cfgUrl');
+  const el_key=document.getElementById('cfgKey');
+  if(el_url) el_url.value=SU;
+  if(el_key) el_key.value=SK;
 }
 
 function guardarConfig(){
@@ -783,6 +760,256 @@ function imprimirReporteAdmin(){
   win.document.write(html);
   win.document.close();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PEDIDO AL PROVEEDOR — ADMIN (vista global, filtro por vendedora)
+// ═══════════════════════════════════════════════════════════════════════════
+let apRows = [];
+let apSort = {col:'producto', dir:'asc'};
+
+function buildAdminProveedor(){
+  const filtVend = document.getElementById('apFiltVend')?.value||'';
+  const filtCamp = document.getElementById('apFiltCamp')?.value||'';
+  const filtDesde= document.getElementById('apFiltDesde')?.value||'';
+  const filtHasta= document.getElementById('apFiltHasta')?.value||'';
+  const filtProd = (document.getElementById('apFiltProd')?.value||'').toLowerCase();
+
+  const pedElegibles = allPeds.filter(p=>{
+    if(p.estado==='cancelado') return false;
+    if(!p.items_precio) return false;
+    let items=[]; try{items=JSON.parse(p.items_precio);}catch(e){return false;}
+    if(!items.length) return false;
+    if(filtVend && p.vendedora_username!==filtVend) return false;
+    if(filtCamp && p.campana!==filtCamp) return false;
+    if(filtDesde||filtHasta){
+      let fechaPed=null;
+      try{
+        if(p.created_at) fechaPed=p.created_at.substring(0,10);
+        else if(p.fecha){
+          const parts=p.fecha.split(',')[0].split('/');
+          if(parts.length===3) fechaPed=parts[2].trim()+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+        }
+      }catch(e){}
+      if(filtDesde && fechaPed && fechaPed<filtDesde) return false;
+      if(filtHasta && fechaPed && fechaPed>filtHasta) return false;
+    }
+    return true;
+  });
+
+  apRows = [];
+  pedElegibles.forEach(p=>{
+    let items=[]; try{items=JSON.parse(p.items_precio);}catch(e){}
+    items.forEach(it=>{
+      if(!it.nombre||!it.precio) return;
+      if(filtProd && !it.nombre.toLowerCase().includes(filtProd)) return;
+      apRows.push({
+        pedidoId:  p.id,
+        producto:  it.nombre,
+        qty:       it.qty||1,
+        precio:    it.precio||0,
+        subtotal:  it.subtotal||(it.precio*(it.qty||1))||0,
+        cliente:   p.nombre||'—',
+        vendedora: p.vendedora_username||'—',
+        campana:   p.campana||'—',
+        fecha:     p.fecha||p.created_at||'—',
+        estado:    p.estado||'—',
+        numero:    p.numero_pedido||'',
+        selected:  true
+      });
+    });
+  });
+
+  renderTablaAdminProveedor();
+}
+
+function renderTablaAdminProveedor(){
+  const tabla=document.getElementById('ap-tabla');
+  if(!tabla) return;
+
+  if(!apRows.length){
+    tabla.innerHTML='<div class="empty" style="padding:32px;">📭 Sin pedidos con precio cargado que coincidan con los filtros.</div>';
+    document.getElementById('ap-resumen').style.display='none';
+    return;
+  }
+
+  const col=apSort.col, dir=apSort.dir==='asc'?1:-1;
+  const sorted=[...apRows].sort((a,b)=>{
+    const av=a[col]||'', bv=b[col]||'';
+    if(typeof av==='number') return (av-bv)*dir;
+    return String(av).localeCompare(String(bv),'es')*dir;
+  });
+
+  const cols=[
+    {key:'sel',      label:'☑',         sortable:false, w:'36px'},
+    {key:'producto', label:'Producto',   sortable:true,  w:''},
+    {key:'qty',      label:'Cant.',      sortable:true,  w:'55px'},
+    {key:'precio',   label:'Precio u.',  sortable:true,  w:'85px'},
+    {key:'subtotal', label:'Subtotal',   sortable:true,  w:'85px'},
+    {key:'cliente',  label:'Cliente',    sortable:true,  w:''},
+    {key:'vendedora',label:'Vendedora',  sortable:true,  w:'100px'},
+    {key:'campana',  label:'Campaña',    sortable:true,  w:'95px'},
+    {key:'fecha',    label:'Fecha',      sortable:false,  w:'110px'},
+    {key:'estado',   label:'Estado',     sortable:true,  w:'75px'},
+  ];
+
+  const thHTML=cols.map(c=>{
+    const base='padding:10px 12px;font-size:10px;text-align:left;';
+    if(!c.sortable) return `<th style="width:${c.w};${base}">${c.label}</th>`;
+    const isActive=apSort.col===c.key;
+    const arrow=isActive?(apSort.dir==='asc'?'↑':'↓'):'↕';
+    return `<th style="width:${c.w};${base}cursor:pointer;" onclick="apSortBy('${c.key}')">${c.label} <span style="opacity:.4">${arrow}</span></th>`;
+  }).join('');
+
+  const estados={pendiente:'⏳',listo:'✅',entregado:'📬',cobrado:'💰',cancelado:'❌'};
+  const rowsHTML=sorted.map(r=>{
+    const ri=apRows.indexOf(r);
+    const dim=r.selected?'':'opacity:.5;';
+    return `<tr style="${dim}">
+      <td style="padding:10px 12px;text-align:center;">
+        <input type="checkbox" ${r.selected?'checked':''} onchange="apToggle(${ri},this.checked)"
+          style="width:16px;height:16px;cursor:pointer;">
+      </td>
+      <td style="padding:10px 12px;font-size:13px;font-weight:600;">${r.producto}</td>
+      <td style="padding:10px 12px;text-align:center;font-size:13px;">${r.qty}</td>
+      <td style="padding:10px 12px;text-align:right;font-size:13px;">$${Number(r.precio).toLocaleString('es-AR')}</td>
+      <td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:var(--accent);">$${Number(r.subtotal).toLocaleString('es-AR')}</td>
+      <td style="padding:10px 12px;font-size:12px;">${r.cliente}${r.numero?' <span style="font-size:10px;color:var(--text3);">#'+r.numero+'</span>':''}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--text2);">${r.vendedora}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--text3);">${r.campana}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--text3);">${String(r.fecha).split(',')[0]}</td>
+      <td style="padding:10px 12px;font-size:12px;">${estados[r.estado]||r.estado}</td>
+    </tr>`;
+  }).join('');
+
+  tabla.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">${thHTML}</tr></thead>
+    <tbody>${rowsHTML}</tbody>
+  </table>`;
+
+  actualizarResumenAdmin();
+}
+
+function apSortBy(col){
+  if(apSort.col===col) apSort.dir=apSort.dir==='asc'?'desc':'asc';
+  else{apSort.col=col;apSort.dir='asc';}
+  renderTablaAdminProveedor();
+}
+
+function apToggle(idx, checked){
+  if(apRows[idx]) apRows[idx].selected=checked;
+  actualizarResumenAdmin();
+}
+
+function apSelAll(val){
+  apRows.forEach(r=>r.selected=val);
+  renderTablaAdminProveedor();
+}
+
+function actualizarResumenAdmin(){
+  const sel=apRows.filter(r=>r.selected);
+  const box=document.getElementById('ap-resumen');
+  if(!box) return;
+  if(!sel.length){box.style.display='none';return;}
+  const agrup={};
+  sel.forEach(r=>{
+    if(!agrup[r.producto]) agrup[r.producto]=0;
+    agrup[r.producto]+=r.qty;
+  });
+  const totalSel=sel.reduce((s,r)=>s+r.subtotal,0);
+  const vends=[...new Set(sel.map(r=>r.vendedora))].join(', ');
+  box.style.display='block';
+  box.innerHTML=`<strong>${sel.length} ítem${sel.length!==1?'s':''}</strong> seleccionados · 
+    ${Object.keys(agrup).length} producto${Object.keys(agrup).length!==1?'s distintos':' distinto'} · 
+    Vendedoras: <strong>${vends}</strong> · 
+    Total: <strong style="color:var(--accent);">$${totalSel.toLocaleString('es-AR')}</strong>`;
+}
+
+function imprimirAdminProveedor(){
+  const sel=apRows.filter(r=>r.selected);
+  if(!sel.length){toast('⚠️ Seleccioná al menos un ítem','err');return;}
+
+  // Agrupar por producto
+  const agrup={};
+  sel.forEach(r=>{
+    if(!agrup[r.producto]) agrup[r.producto]={producto:r.producto,qty:0,clientes:[],precio:r.precio};
+    agrup[r.producto].qty+=r.qty;
+    agrup[r.producto].clientes.push({
+      nombre:r.cliente, qty:r.qty,
+      fecha:String(r.fecha).split(',')[0],
+      numero:r.numero, campana:r.campana, vendedora:r.vendedora
+    });
+  });
+
+  const fecha=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+  const totalBultos=Object.values(agrup).reduce((s,p)=>s+p.qty,0);
+  const filtVend=document.getElementById('apFiltVend')?.value||'';
+  const filtCamp=document.getElementById('apFiltCamp')?.value||'';
+  const vendsTitulo=filtVend?`Vendedora: ${filtVend}`:'Todas las vendedoras';
+  const campTitulo=filtCamp?`Campaña: ${filtCamp}`:'Todas las campañas';
+
+  const rowsHtml=Object.values(agrup).sort((a,b)=>a.producto.localeCompare(b.producto,'es')).map(p=>{
+    const clientesList=p.clientes.map(c=>`<li style="font-size:11px;color:#6b21a8;">${c.nombre}${c.numero?' #'+c.numero:''} — ${c.qty}u — ${c.fecha} — ${c.campana} — <em>${c.vendedora}</em></li>`).join('');
+    return `<tr>
+      <td style="padding:10px 14px;font-weight:600;">${p.producto}</td>
+      <td style="padding:10px 14px;text-align:center;font-size:20px;font-weight:800;color:#7c3aed;">${p.qty}</td>
+      <td style="padding:10px 14px;"><ul style="padding-left:14px;margin:0;">${clientesList}</ul></td>
+    </tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Pedido Proveedor Admin — Violetta</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Nunito',Arial,sans-serif;color:#1e0a3c;padding:32px;max-width:800px;margin:0 auto;}
+  .logo{font-size:26px;font-weight:800;color:#7c3aed;} .logo span{color:#ec4899;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #7c3aed;padding-bottom:16px;margin-bottom:20px;}
+  .filtros{background:#faf5ff;border-radius:8px;padding:10px 16px;margin-bottom:20px;font-size:12px;color:#6b21a8;}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  th{background:#7c3aed;color:white;padding:10px 14px;font-size:12px;text-align:left;}
+  th.center{text-align:center;}
+  td{padding:10px 14px;border-bottom:1px solid #e9d5ff;font-size:13px;vertical-align:top;}
+  .kpi{display:inline-block;background:#faf5ff;border-radius:10px;padding:10px 20px;margin-right:12px;margin-bottom:12px;text-align:center;}
+  .kpi .big{font-size:26px;font-weight:800;color:#7c3aed;}
+  .kpi .lbl{font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700;}
+  .footer{margin-top:24px;text-align:center;font-size:11px;color:#9ca3af;border-top:1px solid #e9d5ff;padding-top:12px;}
+  @media print{button{display:none!important;}}
+</style></head><body>
+<div class="header">
+  <div>
+    <div class="logo">♦ violetta<span>.</span></div>
+    <div style="margin-top:6px;font-size:13px;font-weight:700;">Panel Administrador</div>
+  </div>
+  <div style="text-align:right;font-size:13px;color:#6b21a8;">
+    <div style="font-size:18px;font-weight:800;color:#7c3aed;">PEDIDO AL PROVEEDOR</div>
+    <div style="margin-top:4px;">📅 ${fecha}</div>
+  </div>
+</div>
+<div class="filtros">📊 ${vendsTitulo} · ${campTitulo}</div>
+<div style="margin-bottom:20px;">
+  <div class="kpi"><div class="big">${Object.keys(agrup).length}</div><div class="lbl">Productos distintos</div></div>
+  <div class="kpi"><div class="big">${totalBultos}</div><div class="lbl">Unidades totales</div></div>
+  <div class="kpi"><div class="big">${sel.length}</div><div class="lbl">Ítems de pedidos</div></div>
+</div>
+<table>
+  <thead><tr>
+    <th>Producto</th><th class="center">Cant. total</th><th>Detalle por cliente</th>
+  </tr></thead>
+  <tbody>${rowsHtml}</tbody>
+</table>
+<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}</div>
+<br>
+<div style="text-align:center;">
+  <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
+  <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-left:8px;font-family:inherit;">✖ Cerrar</button>
+</div>
+</body></html>`;
+
+  const win=window.open('','_blank','width=820,height=920');
+  win.document.write(html);
+  win.document.close();
+}
+// ═══════════════════════════════════════════════════════════════════════════
 </script>
 </body>
 </html>
