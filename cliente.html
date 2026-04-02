@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Cuenta · Violeta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#fff0f9;--surface:#fff;--border:#f9a8d4;--accent:#db2777;--accent2:#9333ea;--text:#500724;--text2:#9d174d;--text3:#fbcfe8;--success:#059669;--shadow:0 4px 24px rgba(219,39,119,0.1);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;min-height:100vh;}
+    .hero{background:linear-gradient(135deg,#db2777 0%,#9333ea 60%,#f472b6 100%);padding:40px 24px 56px;text-align:center;position:relative;overflow:hidden;}
+    .hero::after{content:'';position:absolute;bottom:-28px;left:0;right:0;height:56px;background:var(--bg);border-radius:50% 50% 0 0/56px 56px 0 0;}
+    .hero-back{position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;}
+    .hero-emoji{font-size:48px;margin-bottom:10px;}
+    .hero-title{font-family:'Playfair Display',serif;font-size:34px;color:white;margin-bottom:6px;}
+    .hero-sub{color:rgba(255,255,255,.85);font-size:14px;}
+    .container{max-width:580px;margin:0 auto;padding:32px 20px 60px;}
+    .screen{display:none;}.screen.active{display:block;}
+    .login-card{background:white;border-radius:20px;padding:32px;box-shadow:var(--shadow);text-align:center;}
+    .login-card h2{font-family:'Playfair Display',serif;font-size:24px;color:var(--accent);margin-bottom:8px;}
+    .login-card p{color:#9ca3af;font-size:14px;margin-bottom:28px;line-height:1.5;}
+    .dni-input{width:100%;padding:18px 20px;font-size:22px;font-weight:700;text-align:center;letter-spacing:4px;background:var(--bg);border:2px solid var(--border);border-radius:14px;font-family:inherit;color:var(--text);}
+    .dni-input:focus{outline:none;border-color:var(--accent);background:white;}
+    .btn-main{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;}
+    .btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(219,39,119,.3);}
+    .msg-err{background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:14px;}
+    .welcome-bar{background:white;border-radius:16px;padding:18px 22px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+    .welcome-info h3{font-size:17px;font-weight:700;color:var(--text2);}
+    .welcome-info p{font-size:12px;color:#9ca3af;margin-top:2px;}
+    .logout-btn{background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;}
+    .logout-btn:hover{color:var(--accent);}
+    .main-opts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+    .opt-card{background:white;border-radius:16px;padding:22px 14px;text-align:center;cursor:pointer;border:2px solid var(--border);box-shadow:var(--shadow);transition:all .2s;}
+    .opt-card:hover{border-color:var(--accent);background:linear-gradient(135deg,#fce7f3,#faf5ff);}
+    .opt-card .icon{font-size:34px;margin-bottom:10px;}
+    .opt-card .label{font-size:14px;font-weight:700;color:var(--text2);}
+    .opt-card .sub{font-size:11px;color:#9ca3af;margin-top:4px;}
+    .tab-content{display:none;}.tab-content.active{display:block;}
+    .back-btn{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text2);margin-right:10px;}
+    .card{background:white;border-radius:18px;padding:22px;box-shadow:var(--shadow);margin-bottom:14px;}
+    .card-title{font-size:15px;font-weight:700;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .field{margin-bottom:14px;}
+    .field label{display:block;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;}
+    .field input,.field select,.field textarea{width:100%;background:var(--bg);border:2px solid var(--border);color:var(--text);padding:13px 15px;border-radius:11px;font-size:15px;font-family:inherit;transition:border-color .2s;}
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);background:white;}
+    .field-hint{font-size:11px;color:#9ca3af;margin-top:5px;}
+    .camp-wrap{background:#fdf4ff;border:2px solid #e9d5ff;border-radius:12px;padding:14px;margin-bottom:4px;}
+    .camp-wrap label{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px;}
+    .camp-input{width:100%;background:white;border:2px solid #e9d5ff;color:var(--text);padding:12px 16px;border-radius:9px;font-size:17px;font-weight:700;font-family:inherit;text-align:center;letter-spacing:1px;}
+    .camp-input:focus{outline:none;border-color:var(--accent2);}
+    .steps{display:flex;background:white;border-radius:12px;overflow:hidden;margin-bottom:18px;box-shadow:var(--shadow);}
+    .step{flex:1;padding:12px 6px;text-align:center;font-size:11px;font-weight:700;color:#d1d5db;border-bottom:3px solid transparent;}
+    .step.active{color:var(--accent);border-bottom-color:var(--accent);}
+    .step.done{color:var(--success);border-bottom-color:var(--success);}
+    .step-num{display:block;font-size:16px;margin-bottom:3px;}
+    .form-step{display:none;}.form-step.active{display:block;}
+    .prod-row{display:flex;gap:10px;align-items:center;background:var(--bg);padding:10px;border-radius:11px;margin-bottom:8px;}
+    .prod-input{flex:1;background:white;border:2px solid var(--border);padding:10px 12px;border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);}
+    .prod-input:focus{outline:none;border-color:var(--accent);}
+    .prod-qty{width:62px;background:white;border:2px solid var(--border);padding:10px;border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);text-align:center;}
+    .prod-qty:focus{outline:none;border-color:var(--accent);}
+    .del-btn{background:#fee2e2;color:#ef4444;border:none;padding:10px 12px;border-radius:7px;cursor:pointer;font-size:13px;}
+    .add-prod-btn{width:100%;padding:12px;background:var(--bg);border:2px dashed var(--border);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;border-radius:11px;}
+    .add-prod-btn:hover{border-color:var(--accent);background:white;}
+    .summary-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #fce7f3;}
+    .summary-row:last-child{border-bottom:none;}
+    .summary-label{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;}
+    .summary-val{font-size:14px;font-weight:600;text-align:right;max-width:65%;}
+    .btn-nav{width:100%;padding:15px;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;border:none;margin-bottom:10px;}
+    .btn-nav.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;}
+    .btn-nav.primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(219,39,119,.3);}
+    .btn-nav.back{background:white;color:var(--text2);border:2px solid var(--border);}
+    .btn-nav.back:hover{border-color:var(--accent);color:var(--accent);}
+    .success-box{text-align:center;padding:36px 20px;}
+    .success-icon{font-size:68px;animation:pop .5s ease;margin-bottom:14px;}
+    @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+    .success-title{font-family:'Playfair Display',serif;font-size:28px;color:var(--accent);margin-bottom:10px;}
+    .success-msg{color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:24px;}
+    .cbu-box{background:linear-gradient(135deg,#fdf4ff,#fff0f9);border:2px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;text-align:left;}
+    .cbu-box h4{font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:12px;}
+    .cbu-item{background:white;border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);}
+    .cbu-item .banco{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+    .cbu-item .numero{font-size:15px;font-weight:700;color:var(--accent);font-family:monospace;letter-spacing:1px;}
+    .cbu-item .titular{font-size:12px;color:#9ca3af;margin-top:3px;}
+    .copy-btn{background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;}
+    .pedido-card{background:white;border-radius:14px;padding:16px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--border);}
+    .pedido-card.pendiente{border-left-color:#f59e0b;}
+    .pedido-card.listo{border-left-color:#3b82f6;}
+    .pedido-card.entregado{border-left-color:#8b5cf6;}
+    .pedido-card.cobrado{border-left-color:#10b981;}
+    .ped-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:5px;}
+    .ped-camp{font-size:15px;font-weight:700;color:var(--text2);}
+    .ped-fecha{font-size:11px;color:#9ca3af;}
+    .ped-prods{font-size:13px;color:var(--text);margin-bottom:8px;background:var(--bg);padding:9px 12px;border-radius:8px;}
+    .ped-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+    .badge.pendiente{background:#fef3c7;color:#92400e;}
+    .badge.listo{background:#dbeafe;color:#1e40af;}
+    .badge.entregado{background:#ede9fe;color:#5b21b6;}
+    .badge.cobrado{background:#d1fae5;color:#065f46;}
+    .ped-total{font-size:15px;font-weight:700;color:var(--accent);}
+    .pago-info{margin-top:10px;border-radius:10px;overflow:hidden;}
+    .pago-info-cbu{background:linear-gradient(135deg,#fdf4ff,#fff0f9);border:1px solid var(--border);border-radius:10px;padding:14px;}
+    .pago-info-cbu h5{font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+    .cbu-item-cli{background:white;border-radius:8px;padding:10px 12px;margin-bottom:7px;border:1px solid var(--border);}
+    .cbu-item-cli:last-child{margin-bottom:0;}
+    .cbu-banco-cli{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+    .cbu-num-cli{font-size:14px;font-weight:700;color:var(--accent);font-family:monospace;letter-spacing:.5px;}
+    .cbu-titular-cli{font-size:11px;color:#9ca3af;margin-top:2px;}
+    .copy-num{background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:4px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:5px;}
+    .pago-contactar{background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 14px;font-size:13px;color:#713f12;}
+    .promo-aviso{background:linear-gradient(135deg,#fdf4ff,#fef9c3);border:1px solid #e9d5ff;border-radius:10px;padding:12px 14px;font-size:13px;color:#500724;margin-bottom:8px;line-height:1.5;}
+    #promoAvisos{margin-bottom:14px;display:none;}
+    .empty{text-align:center;padding:44px 20px;color:#9ca3af;}
+    .empty-icon{font-size:44px;margin-bottom:10px;}
+    .loading{text-align:center;padding:36px;color:var(--text2);font-size:14px;}
+    .err-inline{display:none;background:#fee2e2;color:#991b1b;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:12px;}
+    @media(max-width:400px){.main-opts{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <a class="hero-back" href="index.html">← Inicio</a>
+  <div class="hero-emoji">🛍️</div>
+  <h1 class="hero-title">Mis Pedidos</h1>
+  <p class="hero-sub">Ingresá con tu DNI para ver o hacer pedidos</p>
+</div>
+
+<div class="container">
+
+  <!-- LOGIN DNI -->
+  <div class="screen active" id="scr-login">
+    <div class="login-card">
+      <h2>Ingresá tu DNI</h2>
+      <p>Solo el número, sin puntos.<br>Si es tu primera vez, te registramos automáticamente 💜</p>
+      <div id="loginErr" style="display:none;" class="msg-err"></div>
+      <input type="number" class="dni-input" id="dniInput" placeholder="12345678">
+      <br><br>
+      <button class="btn-main" onclick="loginDNI()">Ingresar 💜</button>
+    </div>
+  </div>
+
+  <!-- PORTAL -->
+  <div class="screen" id="scr-portal">
+    <div class="welcome-bar">
+      <div class="welcome-info">
+        <h3 id="welcomeNombre">Bienvenida 💜</h3>
+        <p id="welcomeDni">DNI: —</p>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Salir →</button>
+    </div>
+
+    <div id="main-menu">
+      <div class="main-opts">
+        <div class="opt-card" onclick="showTab('nuevo-pedido')">
+          <div class="icon">📦</div>
+          <div class="label">Nuevo Pedido</div>
+          <div class="sub">Cargar del catálogo</div>
+        </div>
+        <div class="opt-card" onclick="showTab('mis-pedidos')">
+          <div class="icon">📋</div>
+          <div class="label">Mis Pedidos</div>
+          <div class="sub">Ver historial</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUEVO PEDIDO -->
+    <div class="tab-content" id="tab-nuevo-pedido">
+      <div style="display:flex;align-items:center;margin-bottom:18px;">
+        <button class="back-btn" onclick="volverMenu()">←</button>
+        <span style="font-weight:700;font-size:16px;">Nuevo Pedido</span>
+      </div>
+
+      <div class="steps">
+        <div class="step active" id="pstep1"><span class="step-num">📦</span>Productos</div>
+        <div class="step" id="pstep2"><span class="step-num">✅</span>Confirmar</div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="form-step active" id="pfs1">
+        <!-- Vendedora -->
+        <div class="card">
+          <div class="card-title">💼 ¿A qué vendedora le pedís?</div>
+          <div class="field">
+            <select id="selVendedora" onchange="onVendedoraChange()">
+              <option value="">Cargando vendedoras...</option>
+            </select>
+            <div class="field-hint">Elegí la persona que te entregó el catálogo</div>
+          </div>
+        </div>
+
+        <!-- Campaña -->
+        <div class="camp-wrap">
+          <label>📅 Número de campaña del catálogo</label>
+          <input type="text" class="camp-input" id="campNum" placeholder="Ej: 14" maxlength="4">
+          <p style="font-size:11px;color:var(--accent2);margin-top:6px;opacity:.7;">💡 Lo encontrás en la tapa del catálogo</p>
+        </div>
+        <br>
+
+        <!-- Productos -->
+        <div class="card">
+          <div class="card-title">🛍️ ¿Qué productos querés pedir?</div>
+          <div id="pedProdList"></div>
+          <button class="add-prod-btn" onclick="addPedProd()">+ Agregar producto</button>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="card">
+          <div class="card-title">👤 Tus datos</div>
+          <div class="field">
+            <label>Nombre completo</label>
+            <input type="text" id="pClienteNombre" placeholder="Podés editarlo si querés">
+          </div>
+          <div class="field">
+            <label>Teléfono / WhatsApp *</label>
+            <input type="tel" id="pClienteTel" placeholder="+54 9 351 000-0000">
+            <div class="field-hint">Para que la vendedora pueda contactarte</div>
+          </div>
+          <div class="field">
+            <label>Dirección de entrega</label>
+            <input type="text" id="pDireccion" placeholder="Calle, número...">
+          </div>
+          <div class="field">
+            <label>Forma de pago</label>
+            <select id="pPago">
+              <option value="">Seleccioná...</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Notas adicionales (opcional)</label>
+            <input type="text" id="pNotas" placeholder="Cualquier aclaración...">
+          </div>
+        </div>
+
+        <div class="err-inline" id="perr1"></div>
+        <button class="btn-nav primary" onclick="pGoStep(2)">Revisar y confirmar →</button>
+      </div>
+
+      <!-- STEP 2 RESUMEN -->
+      <div class="form-step" id="pfs2">
+        <div id="promoAvisos"></div>
+        <div class="card">
+          <div class="card-title">✅ Resumen del pedido</div>
+          <div id="pedSummary"></div>
+        </div>
+        <!-- CBU si eligió transferencia -->
+        <div id="cbuSection" style="display:none;"></div>
+        <div class="err-inline" id="perr2"></div>
+        <button class="btn-nav back" onclick="pGoStep(1)">← Editar</button>
+        <button class="btn-nav primary" id="btnConfirmar" onclick="confirmarPedido()">💜 Confirmar Pedido</button>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="form-step" id="pfs-ok">
+        <div class="success-box">
+          <div class="success-icon">🎉</div>
+          <h2 class="success-title">¡Pedido recibido!</h2>
+          <p class="success-msg">Tu pedido fue registrado. La vendedora te va a confirmar el total y los detalles en breve. 💜</p>
+          <button class="btn-nav primary" onclick="volverMenu()">← Volver al inicio</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIS PEDIDOS -->
+    <div class="tab-content" id="tab-mis-pedidos">
+      <div style="display:flex;align-items:center;margin-bottom:18px;">
+        <button class="back-btn" onclick="volverMenu()">←</button>
+        <span style="font-weight:700;font-size:16px;">Mis Pedidos</span>
+      </div>
+      <div id="pedidosHistorial"><div class="loading">⏳ Cargando pedidos...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let SUPA_URL = 'https://yafxocedtrktdrplpvie.supabase.co';
+  let SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
+  let currentCliente = null;
+  let misPedidos = [];
+  let todasVendedoras = [];
+  let vendedoraSeleccionada = null;
+
+  // URL param para preseleccionar vendedora
+  const urlParams = new URLSearchParams(window.location.search);
+  const vendedoraParam = urlParams.get('v') || null;
+
+  function H(){ return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; }
+  async function sGet(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json();}
+  async function sPost(t,d){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H(),'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  async function sPatch(t,q,d){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{method:'PATCH',headers:{...H(),'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+
+  // ===== SCREENS =====
+  function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('scr-'+id).classList.add('active');}
+  function showTab(id){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    document.getElementById('main-menu').style.display='none';
+    if(id==='mis-pedidos') cargarHistorial();
+    if(id==='nuevo-pedido') resetForm();
+  }
+  function volverMenu(){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.getElementById('main-menu').style.display='block';
+  }
+
+  // ===== LOGIN DNI =====
+  async function loginDNI(){
+    const dni=document.getElementById('dniInput').value.trim();
+    if(!dni||dni.length<6){showLoginErr('Ingresá un DNI válido');return;}
+    try{
+      let rows=await sGet('clientes',`dni=eq.${dni}`);
+      if(rows.length){
+        currentCliente=rows[0];
+      } else {
+        const [nuevo]=await sPost('clientes',{dni,nombre:'Cliente '+dni,activo:true});
+        currentCliente=nuevo;
+      }
+      localStorage.setItem('violeta_cliente',JSON.stringify(currentCliente));
+      await cargarVendedoras();
+      mostrarPortal();
+    }catch(e){showLoginErr('Error al conectar: '+e.message);}
+  }
+
+  function showLoginErr(msg){const e=document.getElementById('loginErr');e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
+
+  async function cargarVendedoras(){
+    try{
+      todasVendedoras=await sGet('vendedoras','activa=eq.true&order=nombre.asc');
+      const sel=document.getElementById('selVendedora');
+      sel.innerHTML='<option value="">— Elegí tu vendedora —</option>';
+      todasVendedoras.forEach(v=>{
+        sel.innerHTML+=`<option value="${v.id}" data-username="${v.username}">${v.nombre}</option>`;
+      });
+      // Preseleccionar si viene por URL
+      if(vendedoraParam){
+        const v=todasVendedoras.find(x=>x.username.toLowerCase()===vendedoraParam.toLowerCase());
+        if(v){
+          sel.value=v.id;
+          vendedoraSeleccionada=v;
+        }
+      }
+    }catch(e){document.getElementById('selVendedora').innerHTML='<option value="">Error al cargar vendedoras</option>';}
+  }
+
+  function onVendedoraChange(){
+    const sel=document.getElementById('selVendedora');
+    const id=sel.value;
+    vendedoraSeleccionada=todasVendedoras.find(v=>v.id===id)||null;
+  }
+
+  function mostrarPortal(){
+    document.getElementById('welcomeNombre').textContent=(currentCliente.nombre||'Bienvenida')+' 💜';
+    document.getElementById('welcomeDni').textContent='DNI: '+currentCliente.dni;
+    // Precargar datos del cliente en el form
+    if(currentCliente.nombre&&!currentCliente.nombre.startsWith('Cliente '))
+      document.getElementById('pClienteNombre').value=currentCliente.nombre;
+    if(currentCliente.telefono) document.getElementById('pClienteTel').value=currentCliente.telefono;
+    if(currentCliente.direccion) document.getElementById('pDireccion').value=currentCliente.direccion;
+    showScreen('portal');
+    addPedProd();
+  }
+
+  function doLogout(){localStorage.removeItem('violeta_cliente');currentCliente=null;misPedidos=[];document.getElementById('dniInput').value='';volverMenu();showScreen('login');}
+
+  // ===== FORM =====
+  function resetForm(){
+    document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('active'));
+    document.getElementById('pfs1').classList.add('active');
+    ['pstep1','pstep2'].forEach((id,i)=>{const el=document.getElementById(id);el.classList.remove('active','done');if(i===0)el.classList.add('active');});
+    document.getElementById('pedProdList').innerHTML='';
+    document.getElementById('campNum').value='';
+    document.getElementById('pNotas').value='';
+    document.getElementById('pPago').value='';
+    if(currentCliente?.nombre&&!currentCliente.nombre.startsWith('Cliente '))
+      document.getElementById('pClienteNombre').value=currentCliente.nombre;
+    if(currentCliente?.telefono) document.getElementById('pClienteTel').value=currentCliente.telefono;
+    if(currentCliente?.direccion) document.getElementById('pDireccion').value=currentCliente.direccion;
+    addPedProd();
+  }
+
+  function addPedProd(){
+    const d=document.getElementById('pedProdList');
+    const id='pp_'+Date.now();
+    const row=document.createElement('div');
+    row.className='prod-row';row.id=id;
+    row.innerHTML=`<input type="text" class="prod-input" placeholder="Nombre del producto">
+      <input type="number" class="prod-qty" min="1" value="1">
+      <button class="del-btn" onclick="delPedProd('${id}')">🗑️</button>`;
+    d.appendChild(row);
+  }
+
+  function delPedProd(id){
+    if(document.querySelectorAll('.prod-row').length>1) document.getElementById(id).remove();
+    else document.querySelector('.prod-input').value='';
+  }
+
+  function getProds(){
+    return [...document.querySelectorAll('#pedProdList .prod-row')].map(r=>{
+      const n=r.querySelector('.prod-input').value.trim();
+      const q=r.querySelector('.prod-qty').value;
+      return n?`${q}x ${n}`:null;
+    }).filter(Boolean);
+  }
+
+  function pGoStep(n){
+    if(n===2){
+      const camp=document.getElementById('campNum').value.trim();
+      const prods=getProds();
+      const pago=document.getElementById('pPago').value;
+      const dir=document.getElementById('pDireccion').value.trim();
+      const tel=document.getElementById('pClienteTel').value.trim();
+      const vend=document.getElementById('selVendedora').value;
+      if(!vend){showErr('perr1','⚠️ Elegí una vendedora.');return;}
+      if(!camp||!prods.length||!pago||!dir||!tel){showErr('perr1','⚠️ Completá campaña, teléfono, al menos un producto, pago y dirección.');return;}
+      buildSummary();
+      mostrarCBU(pago);
+    }
+    document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('active'));
+    document.getElementById('pfs'+n).classList.add('active');
+    document.querySelectorAll('.step').forEach((el,i)=>{
+      el.classList.remove('active','done');
+      if(i+1<n) el.classList.add('done');
+      else if(i+1===n) el.classList.add('active');
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
+
+  function buildSummary(){
+    const sel=document.getElementById('selVendedora');
+    const vendNombre=sel.options[sel.selectedIndex]?.text||'—';
+    const prods=getProds();
+    const data=[
+      ['💼 Vendedora',vendNombre],
+      ['📅 Campaña','Campaña '+document.getElementById('campNum').value],
+      ['🛍️ Productos',prods.join(', ')],
+      ['👤 Nombre',document.getElementById('pClienteNombre').value||currentCliente?.nombre||'—'],
+      ['📱 Teléfono',document.getElementById('pClienteTel').value],
+      ['💳 Pago',document.getElementById('pPago').value],
+      ['🏠 Dirección',document.getElementById('pDireccion').value],
+      ['💬 Notas',document.getElementById('pNotas').value||'—'],
+    ];
+    document.getElementById('pedSummary').innerHTML=data.map(([l,v])=>
+      `<div class="summary-row"><span class="summary-label">${l}</span><span class="summary-val">${v}</span></div>`
+    ).join('');
+
+    // Detectar promos 2x50% aplicables
+    detectarPromos(prods);
+  }
+
+  function detectarPromos(prods){
+    // Mapa de grupos: qué productos del pedido caen en qué grupo
+    const grupos={};
+    prods.forEach(p=>{
+      const nombre=p.replace(/^\d+x\s+/,'').toLowerCase();
+      // Búsqueda simple por palabras clave en el catálogo cargado
+      const cat=todasVendedoras.length?null:null; // catálogo no está en cliente, usamos heurística
+      // Detección por palabras clave de grupos conocidos
+      const CLAVES_GRUPOS={
+        'A':['equal n° 39','equal n°39','equal n° 32','equal n°32','equal n° 05','equal n° 11','equal n° 29','equal n° 02','equal n° 10','equal n° 24'],
+        'B':['endless me','je t\'aime','belle'],
+        'C':['sex for women','fly eau','capriccio'],
+        'D':['body love coconut','body love sensual','body love midnight','body love forever'],
+        'E':['kiss me','fleur','my essence','night seduction','cyclone','deep earth','magma','marine mist'],
+        'F':['anthology'],
+        'G':['sex for men'],
+        'H':['homme sport'],
+      };
+      for(const [grp,claves] of Object.entries(CLAVES_GRUPOS)){
+        if(claves.some(c=>nombre.includes(c))){
+          if(!grupos[grp]) grupos[grp]=[];
+          grupos[grp].push(p);
+        }
+      }
+    });
+
+    // Construir avisos
+    const avisos=[];
+    for(const [grp,items] of Object.entries(grupos)){
+      if(items.length>=2){
+        avisos.push(`🎉 <strong>Promoción 2x50%:</strong> tenés ${items.length} productos del grupo ${grp}. El más barato sale al 50% de descuento — la vendedora lo aplicará al confirmar el total.`);
+      } else if(items.length===1){
+        avisos.push(`ℹ️ <strong>Promo disponible:</strong> si agregás otro producto compatible con "${items[0].replace(/^\d+x\s+/,'')}", el más barato sale al 50% de descuento.`);
+      }
+    }
+
+    const box=document.getElementById('promoAvisos');
+    if(box){
+      box.innerHTML=avisos.length?avisos.map(a=>`<div class="promo-aviso">${a}</div>`).join(''):'';
+      box.style.display=avisos.length?'block':'none';
+    }
+  }
+
+  function mostrarCBU(pago){
+    const sec=document.getElementById('cbuSection');
+    if(pago!=='Transferencia'||!vendedoraSeleccionada){sec.style.display='none';return;}
+    let cbus=[];
+    try{ cbus=JSON.parse(vendedoraSeleccionada.cbus||'[]'); }catch(e){}
+    if(!cbus.length){sec.style.display='none';return;}
+    sec.style.display='block';
+    sec.innerHTML=`<div class="cbu-box">
+      <h4>🏦 Datos para transferir a ${vendedoraSeleccionada.nombre}</h4>
+      ${cbus.map(c=>`
+        <div class="cbu-item">
+          <div class="banco">${c.banco||'Cuenta'}</div>
+          <div class="numero">${c.numero}</div>
+          <div class="titular">Titular: ${c.titular}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${c.numero}').then(()=>alert('📋 CBU copiado'))">📋 Copiar CBU/Alias</button>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  async function confirmarPedido(){
+    const btn=document.getElementById('btnConfirmar');
+    btn.disabled=true;btn.textContent='⏳ Enviando...';
+
+    const sel=document.getElementById('selVendedora');
+    const nombre=document.getElementById('pClienteNombre').value.trim()||currentCliente?.nombre||'';
+    const telefono=document.getElementById('pClienteTel').value.trim();
+
+    const pedido={
+      fecha:new Date().toLocaleString('es-AR'),
+      campana:'Campaña '+document.getElementById('campNum').value,
+      productos:getProds().join(' | '),
+      nombre,
+      dni_cliente:currentCliente?.dni||'',
+      cliente_id:currentCliente?.id||null,
+      telefono,
+      pago:document.getElementById('pPago').value,
+      direccion:document.getElementById('pDireccion').value.trim(),
+      notas:document.getElementById('pNotas').value.trim(),
+      lugar:'Otro',
+      estado:'pendiente',
+      vendedora_id:vendedoraSeleccionada?.id||null,
+      vendedora_username:vendedoraSeleccionada?.username||null,
+      total:null
+    };
+
+    try{
+      await sPost('pedidos',pedido);
+      // Actualizar datos del cliente
+      const updates={};
+      if(nombre&&nombre!==currentCliente?.nombre) updates.nombre=nombre;
+      if(telefono&&telefono!==currentCliente?.telefono) updates.telefono=telefono;
+      if(pedido.direccion&&pedido.direccion!==currentCliente?.direccion) updates.direccion=pedido.direccion;
+      if(Object.keys(updates).length&&currentCliente?.id){
+        await sPatch('clientes',`id=eq.${currentCliente.id}`,updates);
+        Object.assign(currentCliente,updates);
+        localStorage.setItem('violeta_cliente',JSON.stringify(currentCliente));
+      }
+      document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('active'));
+      document.getElementById('pfs-ok').classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){
+      showErr('perr2','❌ '+e.message);
+      btn.disabled=false;btn.textContent='💜 Confirmar Pedido';
+    }
+  }
+
+  // ===== HISTORIAL =====
+  async function cargarHistorial(){
+    document.getElementById('pedidosHistorial').innerHTML='<div class="loading">⏳ Cargando...</div>';
+    try{
+      misPedidos=await sGet('pedidos',`dni_cliente=eq.${currentCliente.dni}&order=created_at.desc`);
+      renderHistorial();
+    }catch(e){document.getElementById('pedidosHistorial').innerHTML=`<div class="empty"><div class="empty-icon">❌</div><p>${e.message}</p></div>`;}
+  }
+
+  function renderHistorial(){
+    if(!misPedidos.length){
+      document.getElementById('pedidosHistorial').innerHTML='<div class="empty"><div class="empty-icon">📭</div><p>Todavía no tenés pedidos.<br>¡Hacé tu primer pedido!</p></div>';
+      return;
+    }
+    const ic={pendiente:'⏳',listo:'✅',entregado:'📬',cobrado:'💰'};
+    document.getElementById('pedidosHistorial').innerHTML=misPedidos.map(p=>{
+      // Datos de pago CBU si tiene vendedora y eligió transferencia
+      let pagoHtml='';
+      if(p.pago==='Transferencia'){
+        // Buscar vendedora en la lista ya cargada o intentar parsear si viene en el pedido
+        const vend=todasVendedoras.find(v=>v.id===p.vendedora_id||v.username===p.vendedora_username);
+        let cbus=[];
+        try{ if(vend?.cbus) cbus=JSON.parse(vend.cbus); }catch(e){}
+        if(cbus.length){
+          pagoHtml=`<div class="pago-info">
+            <div class="pago-info-cbu">
+              <h5>🏦 Datos para transferir a ${vend?.nombre||p.vendedora_username||'tu vendedora'}</h5>
+              ${cbus.map(c=>`
+                <div class="cbu-item-cli">
+                  <div class="cbu-banco-cli">${c.banco||'Cuenta'}</div>
+                  <div class="cbu-num-cli">${c.numero}</div>
+                  <div class="cbu-titular-cli">Titular: ${c.titular}</div>
+                  <button class="copy-num" onclick="navigator.clipboard.writeText('${c.numero}').then(()=>alert('📋 Copiado!'))">📋 Copiar</button>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        } else {
+          pagoHtml=`<div class="pago-info">
+            <div class="pago-contactar">
+              💬 Para realizar el pago por transferencia, <strong>ponete en contacto con tu vendedora</strong> para que te pase los datos de la cuenta.
+              ${p.vendedora_username?`<br><br><a href="https://wa.me/" style="color:var(--accent);font-weight:700;">WhatsApp →</a>`:''}
+            </div>
+          </div>`;
+        }
+      }
+
+      return `<div class="pedido-card ${p.estado||'pendiente'}">
+        <div class="ped-header">
+          <div>
+            <div class="ped-camp">${p.campana||'—'}</div>
+            <div class="ped-fecha">📅 ${p.fecha||'—'} · 💼 ${p.vendedora_username||'—'}</div>
+          </div>
+          <span class="badge ${p.estado||'pendiente'}">${ic[p.estado]||'⏳'} ${p.estado||'pendiente'}</span>
+        </div>
+        <div class="ped-prods">🛍️ ${p.productos||'—'}</div>
+        <div class="ped-footer">
+          <span style="font-size:12px;color:#9ca3af;">💳 ${p.pago||'—'}</span>
+          <span class="ped-total">${p.total?'$'+Number(p.total).toLocaleString('es-AR'):'Total pendiente'}</span>
+        </div>
+        ${pagoHtml}
+      </div>`;
+    }).join('');
+  }
+
+  // ===== INIT =====
+  const saved=localStorage.getItem('violeta_cliente');
+  if(saved){
+    try{
+      currentCliente=JSON.parse(saved);
+      cargarVendedoras().then(()=>mostrarPortal());
+    }catch(e){localStorage.removeItem('violeta_cliente');}
+  }
+  document.addEventListener('keypress',e=>{if(e.key==='Enter'&&document.getElementById('scr-login').classList.contains('active'))loginDNI();});
+</script>
+</body>
+</html>

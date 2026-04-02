@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Violeta · Pedidos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0118;
+      --p: #c026d3;
+      --p2: #a855f7;
+      --p3: #ec4899;
+      --gold: #f59e0b;
+      --text: #fdf4ff;
+      --text2: #d8b4fe;
+      --text3: #7c3aed;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Quicksand', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ANIMATED BG */
+    .orb { position:fixed; border-radius:50%; filter:blur(80px); opacity:0.25; pointer-events:none; animation:float 8s ease-in-out infinite; }
+    .orb1 { width:400px; height:400px; background:var(--p); top:-100px; left:-100px; animation-delay:0s; }
+    .orb2 { width:300px; height:300px; background:var(--p2); bottom:-80px; right:-80px; animation-delay:-3s; }
+    .orb3 { width:200px; height:200px; background:var(--p3); top:50%; left:50%; margin:-100px; animation-delay:-5s; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
+
+    .wrap { position:relative; z-index:10; width:100%; max-width:420px; }
+
+    /* HEADER */
+    .brand { text-align:center; margin-bottom:48px; }
+    .brand-emoji { font-size:64px; display:block; margin-bottom:12px; filter:drop-shadow(0 0 20px rgba(192,38,211,0.6)); }
+    .brand-name { font-family:'Playfair Display', serif; font-size:48px; background:linear-gradient(135deg, #f0abfc, #c026d3, #7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .brand-tagline { color:var(--text2); font-size:14px; margin-top:6px; letter-spacing:0.5px; }
+
+    /* CARDS */
+    .cards { display:flex; flex-direction:column; gap:14px; }
+
+    .entry-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 24px 28px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .entry-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .entry-card:hover { transform: translateY(-3px); border-color: rgba(192,38,211,0.5); box-shadow: 0 12px 40px rgba(192,38,211,0.2); }
+    .entry-card:hover::before { opacity: 1; }
+
+    .card-cliente::before { background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(192,38,211,0.1)); }
+    .card-vendedora::before { background: linear-gradient(135deg, rgba(168,85,247,0.1), rgba(99,102,241,0.1)); }
+    .card-admin::before { background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.05)); }
+
+    .card-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .card-cliente .card-icon { background: linear-gradient(135deg, #ec4899, #c026d3); }
+    .card-vendedora .card-icon { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+    .card-admin .card-icon { background: linear-gradient(135deg, #d97706, #b45309); }
+
+    .card-body { flex: 1; }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .card-desc { font-size: 13px; color: var(--text2); line-height: 1.4; }
+    .card-arrow { font-size: 20px; color: var(--text2); opacity: 0.5; }
+    .entry-card:hover .card-arrow { opacity: 1; transform: translateX(4px); }
+    .card-arrow { transition: all 0.2s; }
+
+    .divider { text-align:center; color: rgba(255,255,255,0.15); font-size: 12px; letter-spacing:2px; margin: 4px 0; }
+
+    footer { margin-top: 40px; text-align:center; font-size: 12px; color: rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="wrap">
+    <div class="brand">
+      <span class="brand-emoji">💜</span>
+      <div class="brand-name">Violeta</div>
+      <div class="brand-tagline">Sistema de pedidos · ¿Cómo ingresás hoy?</div>
+    </div>
+
+    <div class="cards">
+      <a class="entry-card card-cliente" href="cliente.html">
+        <div class="card-icon">🛍️</div>
+        <div class="card-body">
+          <div class="card-title">Soy cliente</div>
+          <div class="card-desc">Hacé un pedido nuevo o consultá tus pedidos anteriores con tu DNI</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <div class="divider">· · ·</div>
+
+      <a class="entry-card card-vendedora" href="vendedora.html">
+        <div class="card-icon">💼</div>
+        <div class="card-body">
+          <div class="card-title">Soy vendedora</div>
+          <div class="card-desc">Ingresá a tu panel para gestionar pedidos, ventas y clientes</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+
+      <a class="entry-card card-admin" href="admin.html">
+        <div class="card-icon">⚙️</div>
+        <div class="card-body">
+          <div class="card-title">Administrador</div>
+          <div class="card-desc">Panel root: vendedoras, catálogo, reportes y configuración</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </a>
+    </div>
+
+    <footer>Violeta Pedidos · Todos los derechos reservados</footer>
+  </div>
+</body>
+</html>
