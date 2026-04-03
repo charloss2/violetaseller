@@ -348,6 +348,7 @@
   let misPedidos = [];
   let misClientes = [];
   let allProductos = [];
+  let waPendiente = {}; // {pedidoId: {url, nombre}} — pedidos con WA para confirmar precio
 
   function H(){ return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; }
   async function sGet(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json();}
@@ -492,6 +493,19 @@
           ${p.total?`<button class="btn-sm outline" onclick="imprimirPedidoDesdeCard('${p.id}')">🖨️ Imprimir</button>`:''}
           ${p.telefono?`<a class="btn-sm wa" href="https://wa.me/${p.telefono.replace(/\D/g,'')}" target="_blank">💬 WhatsApp</a>`:''}
         </div>
+        ${waPendiente[p.id] ? `
+        <div id="wa-banner-${p.id}" style="margin-top:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:600;color:#15803d;">✅ Total guardado — ¿Avisarle al cliente?</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <a href="${waPendiente[p.id]}" target="_blank"
+              onclick="delete waPendiente['${p.id}'];document.getElementById('wa-banner-${p.id}').remove()"
+              style="background:#25D366;color:white;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;text-decoration:none;display:inline-block;">
+              💬 Enviar por WhatsApp
+            </a>
+            <button onclick="delete waPendiente['${p.id}'];document.getElementById('wa-banner-${p.id}').remove()"
+              style="background:#f3f4f6;color:#6b7280;border:none;border-radius:9px;padding:9px 12px;font-size:13px;cursor:pointer;font-family:inherit;">✕</button>
+          </div>
+        </div>` : ''}
       </div>`).join('');
   }
 
@@ -823,9 +837,52 @@
       document.getElementById('precio-panel-'+pedidoId).classList.remove('open');
       actualizarStats();
       toast('✅ Total guardado: $'+total.toLocaleString('es-AR'));
-      // Actualizar botón imprimir externo (ahora aparece en pedido-actions)
-      filtrar(); // rerenderizar para que aparezca el botón imprimir
+      // Preparar URL de WA antes de rerenderizar
+      const ped = misPedidos.find(p=>p.id===pedidoId);
+      if(ped && ped.telefono) waPendiente[pedidoId] = buildWAConfirmUrl(ped, detalleItems, total);
+      filtrar(); // rerenderiza con botón WA incluido dentro de la card
     }catch(e){toast('❌ '+e.message);}
+  }
+
+  // ── WhatsApp al confirmar precio — construye la URL del mensaje ──────────────
+  function buildWAConfirmUrl(ped, detalleItems, total){
+    const tel = (ped.telefono||'').replace(/\D/g,'');
+    if(!tel) return null;
+
+    const estados = {pendiente:'⏳ Pendiente', listo:'✅ Listo para retirar', entregado:'📬 Entregado', cobrado:'💰 Cobrado', cancelado:'❌ Cancelado'};
+    const estadoTexto = estados[ped.estado] || ped.estado || 'Pendiente';
+    const nro = ped.numero_pedido ? ' #'+ped.numero_pedido : '';
+    const vend = currentUser?.nombre || currentUser?.username || 'Tu vendedora';
+
+    const itemsTexto = detalleItems.map(it => {
+      const qty = it.qty > 1 ? it.qty+'x ' : '';
+      const sub = it.qty > 1 ? ' (subtotal $'+Number(it.subtotal).toLocaleString('es-AR')+')' : '';
+      return '  • '+qty+it.nombre+': $'+Number(it.precio).toLocaleString('es-AR')+sub;
+    }).join('\n');
+
+    let cbusTexto = '';
+    try{
+      const cbus = JSON.parse(currentUser?.cbus||'[]');
+      if(cbus.length) cbusTexto = '\n\n💳 *Datos de pago:*\n'+cbus.map(c=>`  ${c.banco||'CBU'}: ${c.numero} · ${c.titular}`).join('\n');
+    }catch(e){}
+
+    const msg = [
+      '💜 *Violetta Cosméticos*',
+      '',
+      `Hola ${ped.nombre||''}! Te confirmamos el precio de tu pedido${nro} 🎉`,
+      '',
+      '🛍️ *Detalle:*',
+      itemsTexto,
+      '',
+      `💰 *Total: $${Number(total).toLocaleString('es-AR')}*`,
+      `📋 *Forma de pago:* ${ped.pago||'—'}`,
+      `📦 *Estado:* ${estadoTexto}`,
+      cbusTexto,
+      '',
+      `_Ante cualquier consulta escribinos. — ${vend}_`
+    ].join('\n').trim();
+
+    return 'https://wa.me/54'+tel+'?text='+encodeURIComponent(msg);
   }
 
   // Imprimir desde el botón externo de la card (sin necesitar abrir el panel)
