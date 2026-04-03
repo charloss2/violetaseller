@@ -385,9 +385,13 @@
     cargarPedidos();
     agregarProducto();
     cargarPerfil();
+    // Solicitar permiso para notificaciones push
+    solicitarPermisoPush();
+    // Arrancar polling de pedidos nuevos
+    iniciarPollingPedidos();
   }
 
-  function doLogout(){localStorage.removeItem('violeta_logged_vendor');location.reload();}
+  function doLogout(){if(_pollingInterval)clearInterval(_pollingInterval);localStorage.removeItem('violeta_logged_vendor');location.reload();}
 
   // ===== TABS =====
   function showTab(id){
@@ -1577,6 +1581,116 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     const win=window.open('','_blank','width=800,height=900');
     win.document.write(html);
     win.document.close();
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PUSH NOTIFICATIONS — Web Push API nativa (sin servicios externos)
+  // ═══════════════════════════════════════════════════════════════════════════
+  let _pushPermitido = false;
+  let _pollingInterval = null;
+  let _ultimoPedidoId = null; // ID del pedido más reciente al iniciar
+
+  async function solicitarPermisoPush(){
+    if(!('Notification' in window)){
+      console.log('Este navegador no soporta notificaciones');
+      return;
+    }
+    if(Notification.permission === 'granted'){
+      _pushPermitido = true;
+      return;
+    }
+    if(Notification.permission !== 'denied'){
+      // Mostrar aviso amigable antes del popup del navegador
+      const banner = document.createElement('div');
+      banner.id = 'push-banner';
+      banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#7c3aed;color:white;padding:14px 20px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(124,58,237,.4);max-width:90vw;';
+      banner.innerHTML = `
+        <span style="font-size:20px;">🔔</span>
+        <span>¿Activar notificaciones para saber cuando llegan pedidos nuevos?</span>
+        <button onclick="pedirPermisoPush()" style="background:white;color:#7c3aed;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Activar</button>
+        <button onclick="document.getElementById('push-banner').remove()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:inherit;">✕</button>`;
+      document.body.appendChild(banner);
+    }
+  }
+
+  async function pedirPermisoPush(){
+    const banner = document.getElementById('push-banner');
+    if(banner) banner.remove();
+    try{
+      const perm = await Notification.requestPermission();
+      _pushPermitido = perm === 'granted';
+      if(_pushPermitido){
+        toast('🔔 Notificaciones activadas');
+        // Notificación de prueba
+        new Notification('💜 Violeta Pedidos', {
+          body: 'Las notificaciones están activas. Te avisaremos cuando llegue un pedido nuevo.',
+          icon: 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Violet/3D/violet_3d.png'
+        });
+      }
+    }catch(e){
+      console.log('Permiso denegado:', e);
+    }
+  }
+
+  function enviarPushPedidoNuevo(pedido){
+    if(!_pushPermitido || Notification.permission !== 'granted') return;
+    const productos = (pedido.productos||'').split('|').slice(0,2).map(p=>p.trim()).join(', ');
+    const nro = pedido.numero_pedido ? '#'+pedido.numero_pedido+' — ' : '';
+    new Notification('🛍️ Nuevo pedido ' + nro + (pedido.nombre||''), {
+      body: productos + (pedido.campana ? ' · '+pedido.campana : ''),
+      icon: 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Violet/3D/violet_3d.png',
+      badge: 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Violet/3D/violet_3d.png',
+      tag: 'pedido-nuevo-' + pedido.id,
+      requireInteraction: false
+    });
+  }
+
+  // Polling: verificar cada 30 segundos si hay pedidos nuevos
+  function iniciarPollingPedidos(){
+    // Guardar el ID del pedido más reciente como referencia
+    if(misPedidos.length){
+      _ultimoPedidoId = misPedidos[0].id;
+    }
+    // Limpiar intervalo anterior si existía
+    if(_pollingInterval) clearInterval(_pollingInterval);
+    _pollingInterval = setInterval(async ()=>{
+      if(!currentUser || document.hidden) return; // no consultar si la pestaña está oculta
+      try{
+        const nuevos = await sGet('pedidos',
+          `vendedora_id=eq.${currentUser.id}&order=created_at.desc&limit=5`
+        );
+        if(!nuevos.length) return;
+        const masReciente = nuevos[0];
+        // Si el ID más reciente cambió, hay pedidos nuevos
+        if(_ultimoPedidoId && masReciente.id !== _ultimoPedidoId){
+          // Encontrar todos los que son más nuevos que el último conocido
+          const idx = nuevos.findIndex(p=>p.id===_ultimoPedidoId);
+          const realmente_nuevos = idx>=0 ? nuevos.slice(0,idx) : [masReciente];
+          realmente_nuevos.forEach(p=>{
+            // Agregar a misPedidos en memoria
+            if(!misPedidos.find(x=>x.id===p.id)){
+              misPedidos.unshift(p);
+              // Notificación push
+              enviarPushPedidoNuevo(p);
+            }
+          });
+          // Actualizar referencia y re-renderizar
+          _ultimoPedidoId = masReciente.id;
+          actualizarStats();
+          filtrar();
+          // Toast con cantidad
+          if(realmente_nuevos.length===1){
+            toast('🛍️ Nuevo pedido de '+realmente_nuevos[0].nombre);
+          } else {
+            toast('🛍️ '+realmente_nuevos.length+' pedidos nuevos');
+          }
+        }
+      }catch(e){
+        // Fallo silencioso en el polling
+        console.log('Polling error:', e.message);
+      }
+    }, 30000); // cada 30 segundos
   }
   // ═══════════════════════════════════════════════════════════════════════════
 </script>

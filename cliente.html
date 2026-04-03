@@ -109,7 +109,10 @@
     .cbu-num-cli{font-size:14px;font-weight:700;color:var(--accent);font-family:monospace;letter-spacing:.5px;}
     .cbu-titular-cli{font-size:11px;color:#9ca3af;margin-top:2px;}
     .copy-num{background:var(--bg);border:1px solid var(--border);color:var(--accent);padding:4px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:5px;}
-    .pago-contactar{background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 14px;font-size:13px;color:#713f12;}
+.pago-contactar{background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 14px;font-size:13px;color:#713f12;}
+    .btn-wa-pedido{display:flex;align-items:center;justify-content:center;gap:10px;background:#25D366;color:white;border:none;border-radius:14px;padding:16px 24px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;text-decoration:none;transition:all .2s;}
+    .btn-wa-pedido:hover{background:#128C7E;transform:translateY(-2px);}
+    .btn-wa-pedido .wa-icon{font-size:22px;}
     .promo-aviso{background:linear-gradient(135deg,#fdf4ff,#fef9c3);border:1px solid #e9d5ff;border-radius:10px;padding:12px 14px;font-size:13px;color:#500724;margin-bottom:8px;line-height:1.5;}
     #promoAvisos{margin-bottom:14px;display:none;}
     .empty{text-align:center;padding:44px 20px;color:#9ca3af;}
@@ -261,7 +264,8 @@
           <div class="success-icon">🎉</div>
           <h2 class="success-title">¡Pedido recibido!</h2>
           <p class="success-msg">Tu pedido fue registrado. La vendedora te va a confirmar el total y los detalles en breve. 💜</p>
-          <button class="btn-nav primary" onclick="volverMenu()">← Volver al inicio</button>
+          <div id="wa-btn-container" style="margin:20px 0;"></div>
+          <button class="btn-nav primary" onclick="volverMenu()" style="margin-top:8px;">← Volver al inicio</button>
         </div>
       </div>
     </div>
@@ -558,6 +562,8 @@
       document.querySelectorAll('.form-step').forEach(s=>s.classList.remove('active'));
       document.getElementById('pfs-ok').classList.add('active');
       window.scrollTo({top:0,behavior:'smooth'});
+      // Preparar botón de WhatsApp con resumen del pedido
+      mostrarBtnWA(pedido);
     }catch(e){
       showErr('perr2','❌ '+e.message);
       btn.disabled=false;btn.textContent='💜 Confirmar Pedido';
@@ -637,6 +643,51 @@
     }catch(e){localStorage.removeItem('violeta_cliente');}
   }
   document.addEventListener('keypress',e=>{if(e.key==='Enter'&&document.getElementById('scr-login').classList.contains('active'))loginDNI();});
+
+  // ── WHATSAPP — Botón para notificar a la vendedora ─────────────────────────
+  function mostrarBtnWA(pedido){
+    const container = document.getElementById('wa-btn-container');
+    if(!container) return;
+
+    // Número de la vendedora
+    const telVend = (vendedoraSeleccionada?.telefono||'').replace(/\D/g,'');
+    if(!telVend){
+      container.innerHTML='<p style="font-size:13px;color:#9ca3af;">Contactá a tu vendedora para confirmar el pedido.</p>';
+      return;
+    }
+
+    // Armar resumen del pedido
+    const prods = pedido.productos.split('|').map(p=>p.trim()).filter(Boolean);
+    const prodsText = prods.map(p=>'  • '+p).join('\n');
+    const msg = [
+      '💜 *Nuevo pedido - Violetta Cosméticos*',
+      '',
+      `👤 *Cliente:* ${pedido.nombre}`,
+      `📱 *Teléfono:* ${pedido.telefono||'no indicado'}`,
+      `📅 *Campaña:* ${pedido.campana}`,
+      `💳 *Pago:* ${pedido.pago}`,
+      pedido.direccion ? `🏠 *Dirección:* ${pedido.direccion}` : '',
+      '',
+      '🛍️ *Productos:*',
+      prodsText,
+      pedido.notas ? `\n💬 *Nota:* ${pedido.notas}` : '',
+      '',
+      '_Pedido enviado desde el sistema de pedidos Violetta_'
+    ].filter(l=>l!==null&&l!==undefined).join('\n').trim();
+
+    const url = 'https://wa.me/54'+telVend+'?text='+encodeURIComponent(msg);
+    container.innerHTML = `
+      <p style="font-size:13px;color:#9d174d;margin-bottom:12px;font-weight:600;">
+        📲 Avisale a tu vendedora por WhatsApp:
+      </p>
+      <a href="${url}" target="_blank" class="btn-wa-pedido">
+        <span class="wa-icon">💬</span>
+        Enviar pedido por WhatsApp
+      </a>
+      <p style="font-size:11px;color:#9ca3af;margin-top:10px;">
+        Se abre WhatsApp con el resumen listo. Solo tocás Enviar.
+      </p>`;
+  }
 </script>
 </body>
 </html>
