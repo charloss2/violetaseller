@@ -754,13 +754,15 @@
       const labelQty = it.qty > 1 ? `<strong>${it.qty}x</strong> ` : '';
       const labelUnit= esMixto ? ' <span style="font-size:10px;color:#9ca3af;">(subtotal)</span>' : '';
 
-      const codigoBadge = it.cat
-        ? `<span style="font-size:10px;background:#ede9fe;color:#7c3aed;border-radius:4px;padding:2px 6px;font-weight:700;margin-right:4px;">${it.cat.codigo}</span>`
-        : '';
+      // Código guardado o del catálogo
+      const codigoVal = it.guardado?.codigo || it.cat?.codigo || '';
       return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;">
         <div style="flex:1;min-width:180px;">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
-            ${codigoBadge}
+            <input type="text" class="item-codigo-input" id="ic_${pedidoId}_${i}"
+              value="${codigoVal}" placeholder="Código"
+              style="width:68px;border:1px solid #e9d5ff;border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;color:#7c3aed;background:#ede9fe;font-weight:700;text-align:center;"
+              title="Código del producto (editable)">
             <input type="text" class="item-nombre-input" id="in_${pedidoId}_${i}"
               value="${it.guardado?.nombre||it.nombre}" placeholder="Nombre del producto"
               style="flex:1;border:1px solid #e9d5ff;border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:#1e0a3c;background:#faf5ff;"
@@ -790,11 +792,16 @@
         inp.value = cat.precio || '';
         recalcularTotal(pedidoId);
       }
-      // Actualizar badge de código
+      // Actualizar input de código
       const row = document.getElementById('irow_'+pedidoId+'_'+idx);
       if(row){
-        const badge = row.querySelector('.item-nombre-input').previousElementSibling;
-        if(badge && badge.tagName==='SPAN') badge.textContent = cat.codigo;
+        const codInp = row.querySelector('.item-codigo-input');
+        if(codInp && !codInp.value) codInp.value = cat.codigo;
+        // También actualizar el nombre con el nombre oficial del catálogo
+        const nomInp = row.querySelector('.item-nombre-input');
+        if(nomInp && nomInp.value.toLowerCase()!==cat.nombre.toLowerCase()){
+          nomInp.placeholder = 'Catálogo: '+cat.nombre;
+        }
       }
       toast('📚 Encontrado: '+cat.nombre.substring(0,40));
     }
@@ -824,7 +831,9 @@
       // Leer nombre del input editable si existe, sino del span
       const nombreInp = row.querySelector('.item-nombre-input');
       const nombre = nombreInp ? nombreInp.value.trim() : (row.querySelector('.item-nombre')?.textContent.trim()||'');
-      detalleItems.push({nombre,qty,precio,subtotal:precio*qty});
+      const codigoInp = row.querySelector('.item-codigo-input');
+      const codigo = codigoInp ? codigoInp.value.trim() : '';
+      detalleItems.push({nombre, codigo, qty, precio, subtotal:precio*qty});
     });
     try{
       await sPatch('pedidos',`id=eq.${pedidoId}`,{total,items_precio:JSON.stringify(detalleItems)});
@@ -1432,18 +1441,27 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       items.forEach(it=>{
         if(!it.nombre||!it.precio) return;
         if(filtProd && !it.nombre.toLowerCase().includes(filtProd)) return;
+        // Buscar código en catálogo si no está en items_precio
+        const codigoProd = it.codigo || (()=>{
+          const catMatch = allProductos.find(prod=>
+            prod.nombre.toLowerCase()===it.nombre.toLowerCase() ||
+            (it.nombre.length>4 && prod.nombre.toLowerCase().includes(it.nombre.toLowerCase()))
+          );
+          return catMatch?.codigo || '';
+        })();
         provRows.push({
           pedidoId: p.id,
           producto: it.nombre,
+          codigo:   codigoProd,
           qty:      it.qty||1,
           precio:   it.precio||0,
-          subtotal: it.subtotal||(it.precio*it.qty)||0,
+          subtotal: it.subtotal||(it.precio*(it.qty||1))||0,
           cliente:  p.nombre||'—',
           campana:  p.campana||'—',
           fecha:    p.fecha||p.created_at||'—',
           estado:   p.estado||'—',
           numero:   p.numero_pedido||'',
-          selected: true  // por defecto seleccionado
+          selected: true
         });
       });
     });
@@ -1473,14 +1491,15 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     // Cabecera
     const cols=[
       {key:'sel',     label:'☑',       sortable:false, w:'36px'},
+      {key:'codigo',  label:'Código',   sortable:true,  w:'70px'},
       {key:'producto',label:'Producto', sortable:true,  w:''},
-      {key:'qty',     label:'Cant.',    sortable:true,  w:'60px'},
-      {key:'precio',  label:'Precio u.',sortable:true,  w:'90px'},
-      {key:'subtotal',label:'Subtotal', sortable:true,  w:'90px'},
+      {key:'qty',     label:'Cant.',    sortable:true,  w:'55px'},
+      {key:'precio',  label:'Precio u.',sortable:true,  w:'85px'},
+      {key:'subtotal',label:'Subtotal', sortable:true,  w:'85px'},
       {key:'cliente', label:'Cliente',  sortable:true,  w:''},
-      {key:'campana', label:'Campaña',  sortable:true,  w:'100px'},
-      {key:'fecha',   label:'Fecha',    sortable:false,  w:'120px'},
-      {key:'estado',  label:'Estado',   sortable:true,  w:'80px'},
+      {key:'campana', label:'Campaña',  sortable:true,  w:'95px'},
+      {key:'fecha',   label:'Fecha',    sortable:false,  w:'100px'},
+      {key:'estado',  label:'Estado',   sortable:true,  w:'72px'},
     ];
 
     const thHTML = cols.map(c=>{
@@ -1500,6 +1519,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
           <input type="checkbox" ${r.selected?'checked':''} onchange="provToggle(${ri},this.checked)"
             style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer;">
         </td>
+        <td style="padding:10px 12px;font-size:11px;color:#7c3aed;font-weight:700;">${r.codigo||'—'}</td>
         <td style="padding:10px 12px;font-size:13px;font-weight:600;">${r.producto}</td>
         <td style="padding:10px 12px;text-align:center;font-size:13px;">${r.qty}</td>
         <td style="padding:10px 12px;text-align:right;font-size:13px;">$${Number(r.precio).toLocaleString('es-AR')}</td>
@@ -1563,21 +1583,30 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     const agrup={};
     sel.forEach(r=>{
       const k=r.producto;
-      if(!agrup[k]) agrup[k]={producto:k, qty:0, clientes:[], precio:r.precio};
+      if(!agrup[k]) agrup[k]={producto:k, codigo:r.codigo||'', qty:0, clientes:[], precio:r.precio};
       agrup[k].qty+=r.qty;
-      agrup[k].clientes.push({nombre:r.cliente, qty:r.qty, fecha:String(r.fecha).split(',')[0], numero:r.numero, campana:r.campana});
+      agrup[k].clientes.push({nombre:r.cliente, qty:r.qty, precio:r.precio, subtotal:r.subtotal, fecha:String(r.fecha).split(',')[0], numero:r.numero, campana:r.campana});
     });
 
     const vend = currentUser?.nombre||currentUser?.username||'Vendedora';
     const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
     const totalBultos = Object.values(agrup).reduce((s,p)=>s+p.qty,0);
 
+    const totalGeneral = sel.reduce((s,r)=>s+r.subtotal,0);
     const rowsHtml = Object.values(agrup).sort((a,b)=>a.producto.localeCompare(b.producto,'es')).map(p=>{
-      const clientesList = p.clientes.map(c=>`<li style="font-size:11px;color:#6b21a8;">${c.nombre}${c.numero?' #'+c.numero:''} — ${c.qty}u — ${c.fecha} — ${c.campana}</li>`).join('');
+      const subtotalProd = p.clientes.reduce((s,c)=>s+c.subtotal,0);
+      const clientesList = p.clientes.map(c=>`<li style="font-size:11px;color:#4c1d95;margin-bottom:2px;">
+        <strong>${c.nombre}</strong>${c.numero?' <span style="color:#9ca3af">#'+c.numero+'</span>':''} — 
+        ${c.qty}u × $${Number(c.precio).toLocaleString('es-AR')} = 
+        <strong>$${Number(c.subtotal).toLocaleString('es-AR')}</strong> — 
+        ${c.fecha} · ${c.campana}
+      </li>`).join('');
       return `<tr>
-        <td style="padding:10px 14px;font-weight:600;">${p.producto}</td>
-        <td style="padding:10px 14px;text-align:center;font-size:18px;font-weight:800;color:#7c3aed;">${p.qty}</td>
-        <td style="padding:10px 14px;">
+        <td style="padding:10px 14px;font-size:11px;color:#7c3aed;font-weight:700;vertical-align:top;">${p.codigo||'—'}</td>
+        <td style="padding:10px 14px;font-weight:700;vertical-align:top;">${p.producto}</td>
+        <td style="padding:10px 14px;text-align:center;font-size:20px;font-weight:800;color:#7c3aed;vertical-align:top;">${p.qty}</td>
+        <td style="padding:10px 14px;text-align:right;font-weight:700;color:#7c3aed;vertical-align:top;">$${Number(subtotalProd).toLocaleString('es-AR')}</td>
+        <td style="padding:10px 14px;vertical-align:top;">
           <ul style="padding-left:14px;margin:0;">${clientesList}</ul>
         </td>
       </tr>`;
@@ -1620,12 +1649,18 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 
 <table>
   <thead><tr>
+    <th style="width:70px;">Código</th>
     <th>Producto</th>
-    <th class="center">Cant. total</th>
-    <th>Detalle por cliente</th>
+    <th class="center" style="width:70px;">Cant.</th>
+    <th class="right" style="width:90px;">Subtotal</th>
+    <th>Detalle por cliente (nombre · cantidad × precio · subtotal · fecha · campaña)</th>
   </tr></thead>
   <tbody>${rowsHtml}</tbody>
 </table>
+
+<div style="text-align:right;font-size:14px;font-weight:800;color:#7c3aed;margin-bottom:16px;border-top:2px solid #7c3aed;padding-top:10px;">
+  Total general seleccionado: $${totalGeneral.toLocaleString('es-AR')}
+</div>
 
 <div class="footer">Pedido generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}</div>
 <br>
