@@ -783,45 +783,34 @@
     detectarPromos();
   }
 
-  function detectarPromos(prods){
-    // Mapa de grupos: qué productos del pedido caen en qué grupo
+    function detectarPromos(){
+    // Usa pedidoItems que tienen promo_tipo y promo_grupo del catálogo
     const grupos={};
-    prods.forEach(p=>{
-      const nombre=p.replace(/^\d+x\s+/,'').toLowerCase();
-      // Búsqueda simple por palabras clave en el catálogo cargado
-      const cat=todasVendedoras.length?null:null; // catálogo no está en cliente, usamos heurística
-      // Detección por palabras clave de grupos conocidos
-      const CLAVES_GRUPOS={
-        'A':['equal n° 39','equal n°39','equal n° 32','equal n°32','equal n° 05','equal n° 11','equal n° 29','equal n° 02','equal n° 10','equal n° 24'],
-        'B':['endless me','je t\'aime','belle'],
-        'C':['sex for women','fly eau','capriccio'],
-        'D':['body love coconut','body love sensual','body love midnight','body love forever'],
-        'E':['kiss me','fleur','my essence','night seduction','cyclone','deep earth','magma','marine mist'],
-        'F':['anthology'],
-        'G':['sex for men'],
-        'H':['homme sport'],
-      };
-      for(const [grp,claves] of Object.entries(CLAVES_GRUPOS)){
-        if(claves.some(c=>nombre.includes(c))){
-          if(!grupos[grp]) grupos[grp]=[];
-          grupos[grp].push(p);
-        }
+    pedidoItems.forEach(it=>{
+      if(it.promo==='2x50' && it.promoGrupo){
+        if(!grupos[it.promoGrupo]) grupos[it.promoGrupo]=[];
+        for(let q=0;q<it.qty;q++) grupos[it.promoGrupo].push(it.nombre);
+      }
+      if(it.promo==='escala'){
+        if(!grupos['esmaltes']) grupos['esmaltes']=[];
+        for(let q=0;q<it.qty;q++) grupos['esmaltes'].push(it.nombre);
       }
     });
 
-    // Construir avisos
     const avisos=[];
     for(const [grp,items] of Object.entries(grupos)){
-      if(items.length>=2){
-        avisos.push(`🎉 <strong>Promoción 2x50%:</strong> tenés ${items.length} productos del grupo ${grp}. El más barato sale al 50% de descuento — la vendedora lo aplicará al confirmar el total.`);
-      } else if(items.length===1){
-        avisos.push(`ℹ️ <strong>Promo disponible:</strong> si agregás otro producto compatible con "${items[0].replace(/^\d+x\s+/,'')}", el más barato sale al 50% de descuento.`);
+      if(grp==='esmaltes'){
+        if(items.length>=2) avisos.push('🎨 <strong>Esmaltes:</strong> precio especial por cantidad — la vendedora aplica el descuento al confirmar.');
+      } else if(items.length>=2){
+        avisos.push('🎉 <strong>¡Promo 2x50%!</strong> Tenés '+items.length+' fragancias del grupo '+grp+'. La más barata al 50% — la vendedora lo aplica al confirmar.');
+      } else {
+        avisos.push('ℹ️ Si agregás otra fragancia del grupo '+grp+', la más barata sale al 50%. ¡Aprovechá!');
       }
     }
 
     const box=document.getElementById('promoAvisos');
     if(box){
-      box.innerHTML=avisos.length?avisos.map(a=>`<div class="promo-aviso">${a}</div>`).join(''):'';
+      box.innerHTML=avisos.length?avisos.map(a=>'<div class="promo-aviso">'+a+'</div>').join(''):'';
       box.style.display=avisos.length?'block':'none';
     }
   }
