@@ -61,6 +61,24 @@
     .prod-qty{width:62px;background:white;border:2px solid var(--border);padding:10px;border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);text-align:center;}
     .prod-qty:focus{outline:none;border-color:var(--accent);}
     .del-btn{background:#fee2e2;color:#ef4444;border:none;padding:10px 12px;border-radius:7px;cursor:pointer;font-size:13px;}
+    .prod-resultado{padding:10px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;transition:background .15s;}
+    .prod-resultado:hover{background:#fdf2f8;}
+    .prod-resultado:last-child{border-bottom:none;}
+    .prod-resultado .cod-badge{background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;}
+    .prod-resultado .prod-info{flex:1;}
+    .prod-resultado .prod-nombre{font-size:13px;font-weight:600;color:#1e0a3c;}
+    .prod-resultado .prod-precio{font-size:12px;color:var(--accent);font-weight:700;}
+    .prod-resultado .prod-promo{font-size:10px;color:#059669;font-weight:600;}
+    .prod-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+    .prod-card .pc-cod{background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;min-width:56px;text-align:center;}
+    .prod-card .pc-info{flex:1;}
+    .prod-card .pc-nombre{font-size:13px;font-weight:700;color:#1e0a3c;}
+    .prod-card .pc-precio{font-size:12px;color:var(--accent);font-weight:700;margin-top:2px;}
+    .prod-card .pc-promo{font-size:10px;color:#059669;}
+    .prod-card .pc-qty{display:flex;align-items:center;gap:6px;}
+    .prod-card .qty-btn{background:white;border:1.5px solid var(--border);color:var(--text);width:28px;height:28px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+    .prod-card .qty-num{font-size:15px;font-weight:700;min-width:24px;text-align:center;}
+    .prod-card .pc-del{background:none;border:none;cursor:pointer;font-size:18px;color:#f9a8d4;padding:4px;}
     .add-prod-btn{width:100%;padding:12px;background:var(--bg);border:2px dashed var(--border);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;border-radius:11px;}
     .add-prod-btn:hover{border-color:var(--accent);background:white;}
     .summary-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #fce7f3;}
@@ -198,16 +216,37 @@
         <!-- Campaña -->
         <div class="camp-wrap">
           <label>📅 Número de campaña del catálogo</label>
-          <input type="text" class="camp-input" id="campNum" placeholder="Ej: 14" maxlength="4">
-          <p style="font-size:11px;color:var(--accent2);margin-top:6px;opacity:.7;">💡 Lo encontrás en la tapa del catálogo</p>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" class="camp-input" id="campNum" placeholder="Ej: 5" maxlength="2"
+              style="width:80px;text-align:center;"
+              oninput="onCampanaChange()">
+            <span style="font-size:18px;font-weight:700;color:var(--accent2);">/26</span>
+          </div>
+          <p style="font-size:11px;color:var(--accent2);margin-top:6px;opacity:.7;">💡 Solo el número — lo encontrás en la tapa del catálogo</p>
+          <div id="camp-estado" style="font-size:12px;margin-top:6px;"></div>
         </div>
         <br>
 
         <!-- Productos -->
         <div class="card">
           <div class="card-title">🛍️ ¿Qué productos querés pedir?</div>
+
+          <!-- Buscador por código/nombre -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div style="flex:1;position:relative;">
+              <input type="text" id="buscarProdCli" placeholder="🔍 Código (ej: 101819) o palabras clave..."
+                style="width:100%;background:var(--bg);border:2px solid var(--border);color:var(--text);padding:12px 14px;border-radius:11px;font-size:15px;font-family:inherit;"
+                oninput="buscarProductoCli()" autocomplete="off">
+              <div id="buscar-resultados" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--border);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;max-height:220px;overflow-y:auto;margin-top:4px;"></div>
+            </div>
+          </div>
+          <div id="buscar-msg" style="font-size:12px;color:#9ca3af;margin-bottom:10px;min-height:16px;"></div>
+
+          <!-- Lista de productos agregados -->
           <div id="pedProdList"></div>
-          <button class="add-prod-btn" onclick="addPedProd()">+ Agregar producto</button>
+          <div id="prod-list-empty" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;display:block;">
+            Buscá un producto arriba para agregarlo al pedido
+          </div>
         </div>
 
         <!-- Datos personales -->
@@ -263,7 +302,11 @@
         <div class="success-box">
           <div class="success-icon">🎉</div>
           <h2 class="success-title">¡Pedido recibido!</h2>
-          <p class="success-msg">Tu pedido fue registrado. La vendedora te va a confirmar el total y los detalles en breve. 💜</p>
+          <p class="success-msg">Tu pedido fue registrado. La vendedora va a revisar los productos y te va a confirmar el precio total por WhatsApp en breve. 💜</p>
+          <div style="background:#fdf4ff;border:1.5px solid #e9d5ff;border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px;color:#6b21a8;text-align:left;">
+            <strong>⏳ ¿Cuándo me dicen el precio?</strong><br>
+            La vendedora revisa tu pedido y te envía el total por WhatsApp. El precio incluye las promos y descuentos que correspondan.
+          </div>
           <div id="wa-btn-container" style="margin:20px 0;"></div>
           <button class="btn-nav primary" onclick="volverMenu()" style="margin-top:8px;">← Volver al inicio</button>
         </div>
@@ -284,6 +327,7 @@
 
 <script>
   let SUPA_URL = 'https://yafxocedtrktdrplpvie.supabase.co';
+  let allProductosCli = []; // catálogo cargado para búsqueda por código
   let SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
   let currentCliente = null;
   let misPedidos = [];
@@ -379,6 +423,9 @@
     ['pstep1','pstep2'].forEach((id,i)=>{const el=document.getElementById(id);el.classList.remove('active','done');if(i===0)el.classList.add('active');});
     document.getElementById('pedProdList').innerHTML='';
     document.getElementById('campNum').value='';
+    resetPedidoItems();
+    allProductosCli=[];
+    const ce=document.getElementById('camp-estado');if(ce)ce.textContent='';
     document.getElementById('pNotas').value='';
     document.getElementById('pPago').value='';
     if(currentCliente?.nombre&&!currentCliente.nombre.startsWith('Cliente '))
@@ -388,29 +435,194 @@
     addPedProd();
   }
 
-  function addPedProd(){
-    const d=document.getElementById('pedProdList');
-    const id='pp_'+Date.now();
-    const row=document.createElement('div');
-    row.className='prod-row';row.id=id;
-    row.innerHTML=`<input type="text" class="prod-input" placeholder="Nombre del producto">
-      <input type="number" class="prod-qty" min="1" value="1">
-      <button class="del-btn" onclick="delPedProd('${id}')">🗑️</button>`;
-    d.appendChild(row);
+  // ── Catálogo y búsqueda de productos ────────────────────────────────────────
+  let pedidoItems = []; // [{codigo, nombre, precio, promo, qty}]
+
+  async function onCampanaChange(){
+    const num = document.getElementById('campNum').value.trim();
+    if(!num) return;
+    const campStr = num.padStart(2,'0') + '/26';
+    const campBD  = 'Campaña ' + num + '/26';
+    const estado  = document.getElementById('camp-estado');
+    estado.textContent = '⏳ Cargando catálogo...';
+    estado.style.color = '#9ca3af';
+    try{
+      // Intentar con formato "Campaña 5/26" y también "5/26"
+      let prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campBD) + '&order=nombre.asc');
+      if(!prods.length){
+        prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campStr) + '&order=nombre.asc');
+      }
+      allProductosCli = prods;
+      if(prods.length){
+        estado.textContent = '✅ ' + prods.length + ' productos de Campaña ' + campStr;
+        estado.style.color = '#059669';
+      } else {
+        estado.textContent = '⚠️ Sin productos para campaña ' + campStr + ' — verificá el número';
+        estado.style.color = '#d97706';
+      }
+    }catch(e){
+      estado.textContent = '❌ Error cargando catálogo';
+      estado.style.color = '#dc2626';
+    }
   }
 
-  function delPedProd(id){
-    if(document.querySelectorAll('.prod-row').length>1) document.getElementById(id).remove();
-    else document.querySelector('.prod-input').value='';
+  function buscarProductoCli(){
+    const q = (document.getElementById('buscarProdCli').value || '').trim();
+    const res = document.getElementById('buscar-resultados');
+    const msg = document.getElementById('buscar-msg');
+
+    if(q.length < 1){ res.style.display='none'; msg.textContent=''; return; }
+
+    if(!allProductosCli.length){
+      msg.textContent = '⚠️ Primero ingresá el número de campaña para cargar el catálogo.';
+      msg.style.color = '#d97706';
+      res.style.display='none';
+      return;
+    }
+
+    // Buscar: prioridad código exacto → código parcial → palabras clave
+    let hits = [];
+    const qLow = q.toLowerCase();
+    const esNumero = /^\d+$/.test(q);
+
+    if(esNumero){
+      // Código exacto primero
+      const exacto = allProductosCli.filter(p => p.codigo === q);
+      if(exacto.length) hits = exacto;
+      else hits = allProductosCli.filter(p => (p.codigo||'').startsWith(q));
+    }
+
+    if(!hits.length){
+      // Palabras clave en nombre
+      const palabras = qLow.split(' ').filter(p=>p.length>2);
+      hits = allProductosCli.filter(p => {
+        const nom = p.nombre.toLowerCase();
+        return palabras.every(pal => nom.includes(pal));
+      });
+    }
+
+    if(!hits.length && q.length >= 3){
+      // Búsqueda flexible — alguna palabra
+      hits = allProductosCli.filter(p => {
+        const nom = p.nombre.toLowerCase();
+        return qLow.split(' ').some(pal => pal.length>2 && nom.includes(pal));
+      }).slice(0,5);
+    }
+
+    if(!hits.length){
+      res.style.display='none';
+      msg.textContent = '❌ Sin coincidencias para "' + q + '" en el catálogo de esta campaña.';
+      msg.style.color = '#dc2626';
+      return;
+    }
+
+    msg.textContent = hits.length + ' resultado' + (hits.length!==1?'s':'') + ' encontrado' + (hits.length!==1?'s':'');
+    msg.style.color = '#9ca3af';
+
+    res.style.display = 'block';
+    res.innerHTML = hits.slice(0,8).map(p => {
+      const tachado = p.precio_tachado ? '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;margin-left:4px;">$' + Number(p.precio_tachado).toLocaleString('es-AR') + '</span>' : '';
+      const promo   = p.promo_tipo && p.promo_tipo !== 'normal'
+        ? '<div class="prod-promo">' + (p.promo_tipo==='2x50'?'🎉 2x50% con otro del grupo':p.promo_tipo==='lanzamiento'?'⚡ Precio lanzamiento':p.promo_tipo==='oferta_especial'?'✨ Oferta especial':'') + '</div>'
+        : '';
+      return '<div class="prod-resultado" onclick="agregarProductoCli(' + JSON.stringify(p).replace(/"/g,"'") + ')">' +
+        '<span class="cod-badge">' + (p.codigo||'—') + '</span>' +
+        '<div class="prod-info">' +
+          '<div class="prod-nombre">' + p.nombre + '</div>' +
+          promo +
+        '</div>' +
+        '<span style="font-size:18px;color:var(--accent);">+</span>' +
+      '</div>';
+    }).join('');
   }
 
+  function agregarProductoCli(prod){
+    // Cerrar resultados
+    document.getElementById('buscar-resultados').style.display='none';
+    document.getElementById('buscarProdCli').value='';
+    document.getElementById('buscar-msg').textContent='';
+
+    // Si ya existe el mismo código, sumar cantidad
+    const existente = pedidoItems.find(it => it.codigo === prod.codigo);
+    if(existente){ existente.qty++; renderPedidoItems(); return; }
+
+    pedidoItems.push({
+      codigo: prod.codigo || '',
+      nombre: prod.nombre,
+      precio: prod.precio,
+      precioProm: prod.precio_promo_2 || null,
+      tachado: prod.precio_tachado || null,
+      promo:  prod.promo_tipo || 'normal',
+      promoGrupo: prod.promo_grupo || '',
+      qty: 1
+    });
+    renderPedidoItems();
+  }
+
+  function cambiarQty(idx, delta){
+    pedidoItems[idx].qty = Math.max(1, (pedidoItems[idx].qty || 1) + delta);
+    renderPedidoItems();
+  }
+
+  function quitarItem(idx){
+    pedidoItems.splice(idx, 1);
+    renderPedidoItems();
+  }
+
+  function renderPedidoItems(){
+    const lista = document.getElementById('pedProdList');
+    const empty = document.getElementById('prod-list-empty');
+    if(!pedidoItems.length){
+      lista.innerHTML='';
+      if(empty) empty.style.display='block';
+      return;
+    }
+    if(empty) empty.style.display='none';
+    lista.innerHTML = pedidoItems.map((it,i) => {
+      const tachStr = it.tachado ? '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;margin-left:4px;">$' + Number(it.tachado).toLocaleString('es-AR') + '</span>' : '';
+      let promoStr = '';
+      if(it.promo === '2x50'){
+        promoStr = '<div class="pc-promo">🎉 2x50% — Grupo ' + it.promoGrupo +
+          (it.precioProm ? ' · 2ª u: $'+Number(it.precioProm).toLocaleString('es-AR') : '') + '</div>';
+      } else if(it.promo === 'lanzamiento'){
+        promoStr = '<div class="pc-promo">⚡ Precio de lanzamiento</div>';
+      } else if(it.promo === 'oferta_especial'){
+        promoStr = '<div class="pc-promo">✨ Oferta especial</div>';
+      } else if(it.promo === 'escala'){
+        promoStr = '<div class="pc-promo">🎨 Precio escala por cantidad</div>';
+      }
+      return '<div class="prod-card">' +
+        '<span class="pc-cod">' + (it.codigo||'—') + '</span>' +
+        '<div class="pc-info">' +
+          '<div class="pc-nombre">' + it.nombre + '</div>' +
+          promoStr +
+        '</div>' +
+        '<div class="pc-qty">' +
+          '<button class="qty-btn" onclick="cambiarQty(' + i + ',-1)">−</button>' +
+          '<span class="qty-num">' + it.qty + '</span>' +
+          '<button class="qty-btn" onclick="cambiarQty(' + i + ',1)">+</button>' +
+        '</div>' +
+        '<button class="pc-del" onclick="quitarItem(' + i + ')">🗑️</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Compatibilidad: getProds ahora lee de pedidoItems
   function getProds(){
-    return [...document.querySelectorAll('#pedProdList .prod-row')].map(r=>{
-      const n=r.querySelector('.prod-input').value.trim();
-      const q=r.querySelector('.prod-qty').value;
-      return n?`${q}x ${n}`:null;
-    }).filter(Boolean);
+    return pedidoItems.map(it => it.qty + 'x ' + (it.codigo ? it.codigo + ' ' : '') + it.nombre);
   }
+
+  // Reset al iniciar nuevo pedido
+  function resetPedidoItems(){
+    pedidoItems = [];
+    renderPedidoItems();
+    document.getElementById('buscarProdCli').value='';
+    document.getElementById('buscar-msg').textContent='';
+    document.getElementById('buscar-resultados').style.display='none';
+  }
+
+  function addPedProd(){ /* legacy — no usado */ }
+  function delPedProd(id){ /* legacy — no usado */ }
 
   function pGoStep(n){
     if(n===2){
@@ -421,7 +633,9 @@
       const tel=document.getElementById('pClienteTel').value.trim();
       const vend=document.getElementById('selVendedora').value;
       if(!vend){showErr('perr1','⚠️ Elegí una vendedora.');return;}
-      if(!camp||!prods.length||!pago||!dir||!tel){showErr('perr1','⚠️ Completá campaña, teléfono, al menos un producto, pago y dirección.');return;}
+      if(!camp){showErr('perr1','⚠️ Ingresá el número de campaña.');return;}
+      if(!pedidoItems.length){showErr('perr1','⚠️ Agregá al menos un producto usando el buscador.');return;}
+      if(!pago||!dir||!tel){showErr('perr1','⚠️ Completá teléfono, dirección y forma de pago.');return;}
       buildSummary();
       mostrarCBU(pago);
     }
@@ -440,23 +654,36 @@
   function buildSummary(){
     const sel=document.getElementById('selVendedora');
     const vendNombre=sel.options[sel.selectedIndex]?.text||'—';
-    const prods=getProds();
+
+    // Tabla de productos con código, nombre y precio
+    const prodsHtml = pedidoItems.map(it => {
+      const promoLabel = it.promo && it.promo!=='normal'
+        ? '<span style="font-size:10px;font-weight:700;color:#059669;margin-left:6px;">'+
+          (it.promo==='2x50'?'🎉 2x50%': it.promo==='lanzamiento'?'⚡ Lanzamiento': it.promo==='oferta_especial'?'✨ Oferta':'')+'</span>' : '';
+      return '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #fce7f3;">' +
+        '<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;margin-top:2px;">'+(it.codigo||'—')+'</span>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:600;">'+it.qty+'x '+it.nombre+promoLabel+'</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
     const data=[
       ['💼 Vendedora',vendNombre],
-      ['📅 Campaña','Campaña '+document.getElementById('campNum').value],
-      ['🛍️ Productos',prods.join(', ')],
+      ['📅 Campaña','Campaña '+document.getElementById('campNum').value.trim()+'/26'],
       ['👤 Nombre',document.getElementById('pClienteNombre').value||currentCliente?.nombre||'—'],
       ['📱 Teléfono',document.getElementById('pClienteTel').value],
       ['💳 Pago',document.getElementById('pPago').value],
       ['🏠 Dirección',document.getElementById('pDireccion').value],
       ['💬 Notas',document.getElementById('pNotas').value||'—'],
     ];
-    document.getElementById('pedSummary').innerHTML=data.map(([l,v])=>
-      `<div class="summary-row"><span class="summary-label">${l}</span><span class="summary-val">${v}</span></div>`
-    ).join('');
+    document.getElementById('pedSummary').innerHTML=
+      '<div class="summary-row"><span class="summary-label">🛍️ Productos</span></div>' +
+      '<div style="margin:4px 0 12px;">'+ prodsHtml +'</div>' +
+      data.map(([l,v])=>`<div class="summary-row"><span class="summary-label">${l}</span><span class="summary-val">${v}</span></div>`).join('');
 
-    // Detectar promos 2x50% aplicables
-    detectarPromos(prods);
+    // Detectar promos 2x50% usando el catálogo cargado
+    detectarPromos();
   }
 
   function detectarPromos(prods){
@@ -531,7 +758,7 @@
 
     const pedido={
       fecha:new Date().toLocaleString('es-AR'),
-      campana:'Campaña '+document.getElementById('campNum').value,
+      campana:'Campaña '+document.getElementById('campNum').value.trim()+'/26',
       productos:getProds().join(' | '),
       nombre,
       dni_cliente:currentCliente?.dni||'',

@@ -97,6 +97,18 @@
     @media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
     .form-grid .full{grid-column:1/-1;}
     .product-row{display:flex;gap:10px;align-items:center;background:var(--bg);padding:10px;border-radius:10px;margin-bottom:8px;}
+    .vend-res-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f3e8ff;display:flex;align-items:center;gap:10px;font-size:13px;transition:background .15s;}
+    .vend-res-item:hover{background:#faf5ff;}
+    .vend-res-item:last-child{border-bottom:none;}
+    .vend-prod-card{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+    .vend-prod-card .vpc-cod{background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;}
+    .vend-prod-card .vpc-info{flex:1;}
+    .vend-prod-card .vpc-nombre{font-size:13px;font-weight:700;color:var(--text);}
+    .vend-prod-card .vpc-precio{font-size:11px;color:var(--accent);font-weight:700;}
+    .vend-prod-card .vpc-qty{display:flex;align-items:center;gap:6px;}
+    .vend-prod-card .vqty-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);width:26px;height:26px;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+    .vend-prod-card .vqty-num{font-size:14px;font-weight:700;min-width:22px;text-align:center;}
+    .vend-prod-card .vpc-del{background:none;border:none;cursor:pointer;font-size:16px;color:var(--danger);padding:4px;}
     .product-row input{flex:1;background:white;border:2px solid var(--border);padding:9px 12px;border-radius:8px;font-size:14px;font-family:inherit;}
     .product-row input:focus{outline:none;border-color:var(--accent);}
     .del-btn{background:#fee2e2;color:var(--danger);border:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;}
@@ -260,11 +272,22 @@
         </div>
 
         <div style="margin:18px 0 8px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;">🛍️ Productos</div>
-        <div style="background:#f5f3ff;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#7c3aed;">
-          💡 Escribí el nombre del producto o su código. Podés agregar "2x" adelante para indicar cantidad: <em>2x Sex for Women</em>
+
+        <!-- Buscador por código/nombre -->
+        <div style="position:relative;margin-bottom:6px;">
+          <input type="text" id="buscarProdVend" placeholder="🔍 Código (ej: 101819) o palabras clave del producto..."
+            style="width:100%;background:var(--bg);border:2px solid var(--border);color:var(--text);padding:12px 14px;border-radius:11px;font-size:14px;font-family:inherit;"
+            oninput="buscarProductoVend()" autocomplete="off">
+          <div id="vend-buscar-res" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid #e9d5ff;border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:240px;overflow-y:auto;margin-top:4px;"></div>
         </div>
-        <div id="productos-list"></div>
-        <button class="add-product-btn" onclick="agregarProducto()">+ Agregar producto</button>
+        <div id="vend-buscar-msg" style="font-size:12px;color:#9ca3af;margin-bottom:8px;min-height:16px;"></div>
+
+        <!-- Lista de productos agregados -->
+        <div id="vend-prod-list"></div>
+        <div id="vend-prod-empty" style="text-align:center;padding:12px;color:#9ca3af;font-size:12px;">Buscá un producto arriba para agregarlo</div>
+
+        <!-- Oculto para compatibilidad con guardarPedido -->
+        <div id="productos-list" style="display:none;"></div>
         <br><br>
         <button class="btn-main" onclick="guardarPedido()">Confirmar Pedido 💜</button>
       </div>
@@ -1224,18 +1247,120 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   }
 
   // ===== FORM PEDIDO =====
-  function agregarProducto(){
-    const d=document.getElementById('productos-list');
-    const id='prod_'+Date.now();
-    const row=document.createElement('div');
-    row.className='product-row';row.id=id;
-    row.innerHTML=`<input type="text" placeholder="Ej: Perfume Floral 50ml"><button class="del-btn" onclick="quitarProducto('${id}')">🗑️</button>`;
-    d.appendChild(row);
+  // ── Buscador de productos en nuevo pedido (vendedora) ────────────────────────
+  let vendPedItems = []; // [{codigo, nombre, precio, qty}]
+
+  function buscarProductoVend(){
+    const q = (document.getElementById('buscarProdVend').value || '').trim();
+    const res = document.getElementById('vend-buscar-res');
+    const msg = document.getElementById('vend-buscar-msg');
+    if(q.length < 1){ res.style.display='none'; msg.textContent=''; return; }
+
+    if(!allProductos.length){
+      msg.textContent = '⚠️ El catálogo aún no está cargado.';
+      msg.style.color = '#d97706';
+      res.style.display='none';
+      return;
+    }
+
+    // Filtrar por campaña activa si hay una seleccionada
+    const campSel = document.getElementById('campana')?.value || '';
+    const catFilt = campSel ? allProductos.filter(p=>p.campana===campSel) : allProductos;
+
+    let hits = [];
+    const qLow = q.toLowerCase();
+    const esNum = /^\d+$/.test(q);
+
+    if(esNum){
+      hits = catFilt.filter(p => p.codigo === q);
+      if(!hits.length) hits = catFilt.filter(p => (p.codigo||'').startsWith(q));
+    }
+    if(!hits.length){
+      const palabras = qLow.split(' ').filter(p=>p.length>2);
+      if(palabras.length) hits = catFilt.filter(p => palabras.every(pal => p.nombre.toLowerCase().includes(pal)));
+    }
+    if(!hits.length && q.length>=3){
+      hits = catFilt.filter(p => qLow.split(' ').some(pal => pal.length>2 && p.nombre.toLowerCase().includes(pal))).slice(0,5);
+    }
+
+    if(!hits.length){
+      res.style.display='none';
+      msg.textContent = '❌ Sin coincidencias para "' + q + '"';
+      msg.style.color = '#dc2626';
+      return;
+    }
+
+    msg.textContent = hits.length + ' resultado' + (hits.length!==1?'s':'') + ' encontrado' + (hits.length!==1?'s':'');
+    msg.style.color = '#9ca3af';
+    res.style.display = 'block';
+    res.innerHTML = hits.slice(0,8).map(p => {
+      const promoLabel = p.promo_tipo && p.promo_tipo!=='normal'
+        ? ' <span style="font-size:10px;color:#059669;font-weight:700;">' + (p.promo_tipo==='2x50'?'🎉 2x50%':p.promo_tipo==='lanzamiento'?'⚡ Lanzamiento':'✨ Oferta') + '</span>' : '';
+      return '<div class="vend-res-item" onclick="agregarItemVend(' + JSON.stringify(p).replace(/"/g,"'") + ')">' +
+        '<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;">' + (p.codigo||'—') + '</span>' +
+        '<div style="flex:1;"><div style="font-weight:600;">' + p.nombre + promoLabel + '</div>' +
+        '<div style="font-size:11px;color:var(--accent);font-weight:700;">$' + Number(p.precio).toLocaleString('es-AR') + '</div></div>' +
+        '<span style="color:var(--accent);font-size:18px;">+</span>' +
+      '</div>';
+    }).join('');
   }
 
-  function quitarProducto(id){
-    if(document.querySelectorAll('.product-row').length>1) document.getElementById(id).remove();
-    else document.querySelector('.product-row input').value='';
+  function agregarItemVend(prod){
+    document.getElementById('vend-buscar-res').style.display='none';
+    document.getElementById('buscarProdVend').value='';
+    document.getElementById('vend-buscar-msg').textContent='';
+    const existente = vendPedItems.find(it => it.codigo===prod.codigo && prod.codigo);
+    if(existente){ existente.qty++; renderVendPedItems(); return; }
+    vendPedItems.push({ codigo:prod.codigo||'', nombre:prod.nombre, precio:prod.precio, qty:1 });
+    renderVendPedItems();
+  }
+
+  function cambiarQtyVend(idx, delta){
+    vendPedItems[idx].qty = Math.max(1, (vendPedItems[idx].qty||1)+delta);
+    renderVendPedItems();
+  }
+
+  function quitarItemVend(idx){ vendPedItems.splice(idx,1); renderVendPedItems(); }
+
+  function renderVendPedItems(){
+    const lista = document.getElementById('vend-prod-list');
+    const empty = document.getElementById('vend-prod-empty');
+    if(!vendPedItems.length){ lista.innerHTML=''; if(empty)empty.style.display='block'; return; }
+    if(empty) empty.style.display='none';
+    lista.innerHTML = vendPedItems.map((it,i) =>
+      '<div class="vend-prod-card">' +
+        '<span class="vpc-cod">' + (it.codigo||'—') + '</span>' +
+        '<div class="vpc-info">' +
+          '<div class="vpc-nombre">' + it.nombre + '</div>' +
+          '<div class="vpc-precio">$' + Number(it.precio).toLocaleString('es-AR') + '</div>' +
+        '</div>' +
+        '<div class="vpc-qty">' +
+          '<button class="vqty-btn" onclick="cambiarQtyVend(' + i + ',-1)">−</button>' +
+          '<span class="vqty-num">' + it.qty + '</span>' +
+          '<button class="vqty-btn" onclick="cambiarQtyVend(' + i + ',1)">+</button>' +
+        '</div>' +
+        '<button class="vpc-del" onclick="quitarItemVend(' + i + ')">🗑️</button>' +
+      '</div>'
+    ).join('');
+    // Sincronizar con el div oculto productos-list para guardarPedido
+    const hidden = document.getElementById('productos-list');
+    if(hidden) hidden.innerHTML = vendPedItems.map(it => {
+      const id = 'vpi_'+it.codigo;
+      return '<div class="product-row" id="' + id + '"><input value="' + it.qty + 'x ' + (it.codigo?it.codigo+' ':'')+it.nombre + '"></div>';
+    }).join('');
+  }
+
+  function agregarProducto(){
+    // legacy — ahora no hace nada, el buscador maneja todo
+  }
+  function quitarProducto(id){}
+
+  // Reset al confirmar pedido
+  function resetVendPedItems(){
+    vendPedItems = [];
+    renderVendPedItems();
+    document.getElementById('buscarProdVend').value='';
+    const m=document.getElementById('vend-buscar-msg'); if(m) m.textContent='';
   }
 
   async function guardarPedido(){
@@ -1281,6 +1406,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       document.getElementById('clienteSugerencias').style.display='none';
       document.getElementById('productos-list').innerHTML='';
       agregarProducto();
+      resetVendPedItems();
       setTimeout(()=>{document.getElementById('successMsg').style.display='none';showTab('panel');cargarPedidos();},2000);
     }catch(e){
       const er=document.getElementById('errorMsg');
