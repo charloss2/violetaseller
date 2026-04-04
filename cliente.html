@@ -636,9 +636,8 @@
 
   function agregarProductoCli(prod){ elegirProducto(prod); }
 
-  document.addEventListener('click', e=>{
-    // No cerrar si el click fue en el botón de confirmar o en cualquier botón de navegación
-    if(e.target.closest('.btn-nav') || e.target.closest('#btnConfirmar')) return;
+  // Cerrar dropdown al tocar fuera — usando mousedown en vez de click para no interferir
+  document.addEventListener('mousedown', function(e){
     if(!e.target.closest('#inp-buscar') && !e.target.closest('#buscar-dropdown')){
       const dd=document.getElementById('buscar-dropdown'); if(dd) dd.style.display='none';
     }
@@ -715,48 +714,18 @@
 
   function pGoStep(n){
     if(n===2){
-      const camp = document.getElementById('campNum').value.trim();
-      const pago = document.getElementById('pPago').value.trim();
-      const dir  = document.getElementById('pDireccion').value.trim();
-      const tel  = document.getElementById('pClienteTel').value.trim();
-      const vend = document.getElementById('selVendedora').value;
+      const camp = (document.getElementById('campNum')?.value||'').trim();
+      const pago = (document.getElementById('pPago')?.value||'').trim();
+      const dir  = (document.getElementById('pDireccion')?.value||'').trim();
+      const tel  = (document.getElementById('pClienteTel')?.value||'').trim();
+      const vend = document.getElementById('selVendedora')?.value||'';
 
-      // Validar cada campo con mensaje específico
-      if(!vend){
-        showErr('perr1','⚠️ Elegí una vendedora del listado.');
-        document.getElementById('selVendedora').focus();
-        return;
-      }
-      if(!camp){
-        showErr('perr1','⚠️ Ingresá el número de campaña (ej: 5).');
-        document.getElementById('campNum').focus();
-        return;
-      }
-      if(!allProductosCli.length){
-        showErr('perr1','⚠️ El catálogo no se cargó. Volvé a escribir el número de campaña.');
-        document.getElementById('campNum').focus();
-        return;
-      }
-      if(!pedidoItems.length){
-        showErr('perr1','⚠️ Agregá al menos un producto con el buscador de abajo.');
-        document.getElementById('inp-buscar').focus();
-        return;
-      }
-      if(!tel){
-        showErr('perr1','⚠️ Ingresá tu teléfono o WhatsApp para que te pueda contactar la vendedora.');
-        document.getElementById('pClienteTel').focus();
-        return;
-      }
-      if(!dir){
-        showErr('perr1','⚠️ Ingresá tu dirección de entrega.');
-        document.getElementById('pDireccion').focus();
-        return;
-      }
-      if(!pago){
-        showErr('perr1','⚠️ Elegí una forma de pago.');
-        document.getElementById('pPago').focus();
-        return;
-      }
+      if(!vend)    { showErr('perr1','⚠️ Elegí una vendedora del listado.'); return; }
+      if(!camp)    { showErr('perr1','⚠️ Ingresá el número de campaña.'); return; }
+      if(!pedidoItems.length){ showErr('perr1','⚠️ Agregá al menos un producto.'); return; }
+      if(!tel)     { showErr('perr1','⚠️ Ingresá tu teléfono de contacto.'); return; }
+      if(!dir)     { showErr('perr1','⚠️ Ingresá tu dirección de entrega.'); return; }
+      if(!pago)    { showErr('perr1','⚠️ Elegí una forma de pago.'); return; }
       buildSummary();
       mostrarCBU(pago);
     }
