@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Violetta — Carga Automática de Pedido",
+  "version": "1.0",
+  "description": "Carga automáticamente los productos del pedido al proveedor en la web de Violetta",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.violetta.com.ar/*",
+    "https://violetta.com.ar/*",
+    "https://charloss2.github.io/*",
+    "https://yafxocedtrktdrplpvie.supabase.co/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon48.png"
+    }
+  },
+  "icons": {
+    "48": "icon48.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.violetta.com.ar/*",
+        "https://violetta.com.ar/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

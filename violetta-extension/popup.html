@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #faf5ff;
+      width: 340px;
+      min-height: 200px;
+      color: #1e0a3c;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      padding: 16px 18px;
+      color: white;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; }
+    .header p  { font-size: 11px; opacity: .85; margin-top: 3px; }
+
+    .body { padding: 16px; }
+
+    .status-box {
+      background: white;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .status-box .label { color: #9ca3af; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+    .status-box .val   { font-weight: 700; color: #7c3aed; font-size: 14px; }
+
+    .products-list {
+      background: white;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+    .product-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-bottom: 1px solid #f3e8ff;
+      font-size: 12px;
+    }
+    .product-item:last-child { border-bottom: none; }
+    .product-item .cod {
+      background: #ede9fe;
+      color: #7c3aed;
+      font-weight: 700;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      min-width: 54px;
+      text-align: center;
+    }
+    .product-item .nom { flex: 1; color: #374151; }
+    .product-item .qty {
+      background: #f3f4f6;
+      color: #374151;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      min-width: 28px;
+      text-align: center;
+    }
+    .product-item .done { color: #15803d; font-size: 14px; }
+    .product-item .pending { color: #9ca3af; font-size: 14px; }
+    .product-item .error { color: #dc2626; font-size: 14px; }
+
+    .btn-main {
+      width: 100%;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .2s;
+    }
+    .btn-main:hover { opacity: .9; }
+    .btn-main:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-main.loading { background: #6b7280; }
+
+    .btn-secondary {
+      width: 100%;
+      background: white;
+      color: #7c3aed;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover { background: #faf5ff; }
+
+    .msg {
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .msg.ok    { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .msg.err   { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .msg.info  { background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .msg.warn  { background: #fefce8; color: #92400e; border: 1px solid #fde047; }
+
+    .progress-bar {
+      height: 6px;
+      background: #e9d5ff;
+      border-radius: 3px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      border-radius: 3px;
+      transition: width .4s ease;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 24px;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+    .empty .icon { font-size: 28px; margin-bottom: 8px; }
+
+    .config-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .config-row label { font-size: 11px; color: #6b7280; font-weight: 600; min-width: 80px; }
+    .config-row input {
+      flex: 1;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: #1e0a3c;
+    }
+
+    .tab-bar {
+      display: flex;
+      border-bottom: 2px solid #e9d5ff;
+      margin-bottom: 14px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: inherit;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-btn.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>♦ Violetta — Carga Automática</h1>
+  <p>Cargá tu pedido al proveedor con un click</p>
+</div>
+
+<div class="body">
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('cargar')" id="tab-cargar">🛒 Cargar Pedido</button>
+    <button class="tab-btn" onclick="showTab('config')" id="tab-config">⚙️ Configurar</button>
+  </div>
+
+  <!-- TAB: CARGAR -->
+  <div id="pane-cargar">
+    <div id="msg-area"></div>
+
+    <div id="estado-sitio" class="status-box" style="display:none;">
+      <div class="label">Página detectada</div>
+      <div class="val" id="sitio-nombre">—</div>
+    </div>
+
+    <div id="progress-wrap" style="display:none;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:4px;">
+        <span id="progress-label">Cargando...</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div id="products-wrap">
+      <div class="empty"><div class="icon">📦</div><div>Buscando productos del pedido...</div></div>
+    </div>
+
+    <button class="btn-main" id="btn-cargar" onclick="iniciarCarga()" disabled>
+      🚀 Cargar en la web de Violetta
+    </button>
+    <button class="btn-secondary" onclick="recargarProductos()">🔄 Actualizar lista</button>
+  </div>
+
+  <!-- TAB: CONFIG -->
+  <div id="pane-config" style="display:none;">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:12px;">
+      Configurá los datos de conexión a tu sistema Violetta Pedidos.
+    </div>
+    <div class="config-row">
+      <label>Supabase URL</label>
+      <input type="text" id="cfg-url" placeholder="https://xxx.supabase.co">
+    </div>
+    <div class="config-row">
+      <label>Anon Key</label>
+      <input type="text" id="cfg-key" placeholder="eyJhbG...">
+    </div>
+    <div class="config-row">
+      <label>Campaña</label>
+      <input type="text" id="cfg-camp" placeholder="Campaña 5/26">
+    </div>
+    <div style="font-size:10px;color:#9ca3af;margin-bottom:12px;line-height:1.5;">
+      Solo incluye pedidos con precio cargado, no cancelados, de la campaña indicada.
+    </div>
+    <button class="btn-main" onclick="guardarConfig()" style="background:linear-gradient(135deg,#059669,#0d9488);">
+      💾 Guardar configuración
+    </button>
+    <div id="cfg-msg" style="margin-top:8px;"></div>
+  </div>
+
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
