@@ -1,6 +1,6 @@
 <!--
 ================================================================================
-  Violetta Pedidos — Sistema de gestión de pedidos para vendedoras directas
+  Violetta Seller — Sistema de gestión de pedidos para vendedoras directas
   © 2026 Carlos Caceres. Todos los derechos reservados.
   Proyecto Alpha v1.0.0
   Queda prohibida la reproducción total o parcial sin autorización expresa.
@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Cuenta · Violeta</title>
+  <title>Mi Cuenta · Violetta Seller</title>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#fff0f9;--surface:#fff;--border:#f9a8d4;--accent:#db2777;--accent2:#9333ea;--text:#500724;--text2:#9d174d;--text3:#fbcfe8;--success:#059669;--shadow:0 4px 24px rgba(219,39,119,0.1);}
@@ -981,7 +981,7 @@
     const prods = pedido.productos.split('|').map(p=>p.trim()).filter(Boolean);
     const prodsText = prods.map(p=>'  • '+p).join('\n');
     const msg = [
-      '💜 *Nuevo pedido - Violetta Cosméticos*',
+      '💜 *Nuevo pedido - Violetta Seller*',
       '',
       `👤 *Cliente:* ${pedido.nombre}`,
       `📱 *Teléfono:* ${pedido.telefono||'no indicado'}`,
@@ -1013,7 +1013,7 @@
 </body>
 <!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 

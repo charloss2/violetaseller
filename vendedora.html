@@ -1,6 +1,6 @@
 <!--
 ================================================================================
-  Violetta Pedidos — Sistema de gestión de pedidos para vendedoras directas
+  Violetta Seller — Sistema de gestión de pedidos para vendedoras directas
   © 2026 Carlos Caceres. Todos los derechos reservados.
   Proyecto Alpha v1.0.0
   Queda prohibida la reproducción total o parcial sin autorización expresa.
@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mis Pedidos · Violeta</title>
+  <title>Mis Violetta Seller</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#faf5ff;--surface:#fff;--border:#e9d5ff;--accent:#7c3aed;--accent2:#a855f7;--accent3:#ec4899;--text:#1e0a3c;--text2:#6b21a8;--text3:#a78bfa;--danger:#ef4444;--success:#10b981;--warning:#f59e0b;--shadow:0 4px 24px rgba(124,58,237,0.08);}
@@ -147,7 +147,7 @@
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <div class="login-emoji">💜</div>
-    <h1 class="login-title">Mis Pedidos Violeta</h1>
+    <h1 class="login-title">Violetta Seller</h1>
     <p class="login-sub">Panel de vendedoras</p>
     <div class="field"><label>Usuario</label><input type="text" id="loginUser" placeholder="Tu usuario" autocomplete="username"></div>
     <div class="field"><label>Contraseña</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"></div>
@@ -162,7 +162,7 @@
     <div class="header-left">
       <span style="font-size:26px">💜</span>
       <div>
-        <div class="header-logo">Violeta</div>
+        <div class="header-logo">Violetta Seller</div>
         <div class="header-user">Hola, <span id="welcomeName">vendedora</span> 👋</div>
       </div>
     </div>
@@ -907,7 +907,7 @@
     }catch(e){}
 
     const msg = [
-      '💜 *Violetta Cosméticos*',
+      '💜 *Violetta Seller*',
       '',
       `Hola ${ped.nombre||''}! Te confirmamos el precio de tu pedido${nro} 🎉`,
       '',
@@ -961,7 +961,7 @@
 
     const fecha=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
     const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Pedido ${ped.numero_pedido?'#'+ped.numero_pedido+' — ':''}${ped.nombre||''} — Violetta</title>
+<title>Pedido ${ped.numero_pedido?'#'+ped.numero_pedido+' — ':''}${ped.nombre||''} — Violetta Seller</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -992,8 +992,8 @@
 </style></head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ violetta<span>.</span></div>
-    <div style="font-size:12px;color:#6b21a8;margin-top:4px;">violettacosmeticos.com.ar</div>
+    <div class="logo">♦ Violetta Seller<span>.</span></div>
+    <div style="font-size:12px;color:#6b21a8;margin-top:4px;">violettaseller.com.ar</div>
     <div style="margin-top:8px;font-size:13px;font-weight:700;">Vendedora: ${vend}</div>
     ${tel?`<div style="font-size:12px;color:#6b21a8;">📱 ${tel}</div>`:''}
   </div>
@@ -1025,8 +1025,8 @@
 ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`:''}
 
 <div class="footer">
-  <div>Este resumen fue generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong></div>
-  <div style="margin-top:4px;">Ante cualquier consulta comunicarse con tu vendedora • violettacosmeticos.com.ar</div>
+  <div>Este resumen fue generado por el sistema de pedidos de <strong>Violetta Seller</strong></div>
+  <div style="margin-top:4px;">Ante cualquier consulta comunicarse con tu vendedora • violettaseller.com.ar</div>
 </div>
 
 <br>
@@ -1036,7 +1036,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1109,7 +1109,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       <td class="right bold">${d.recaudacion>0?'$'+d.recaudacion.toLocaleString('es-AR'):'—'}</td></tr>`).join('');
 
     const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Reporte ${vend} — Violetta</title>
+<title>Reporte ${vend} — Violetta Seller</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -1132,7 +1132,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </style></head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ violetta<span>.</span></div>
+    <div class="logo">♦ Violetta Seller<span>.</span></div>
     <div style="margin-top:8px;font-size:14px;font-weight:700;">Vendedora: ${vend}</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -1155,7 +1155,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </table>
 
 <div class="footer">
-  Reporte generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}
+  Reporte generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}
 </div>
 <br>
 <div style="text-align:center;">
@@ -1164,7 +1164,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1222,7 +1222,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     document.getElementById('clientes-container').innerHTML=f.map(c=>{
       const ped=misPedidos.filter(p=>p.telefono===c.telefono||p.cliente_id===c.id).length;
       const tel=(c.telefono||'').replace(/\D/g,'');
-      const waMsg=encodeURIComponent(`Hola ${c.nombre}! 💜 Te escribimos de Violeta Pedidos.`);
+      const waMsg=encodeURIComponent(`Hola ${c.nombre}! 💜 Te escribimos de Violetta Seller.`);
       return `<div class="pedido-card">
         <div class="pedido-card-header">
           <div>
@@ -1856,7 +1856,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </style></head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ violetta<span>.</span></div>
+    <div class="logo">♦ Violetta Seller<span>.</span></div>
     <div style="margin-top:6px;font-size:13px;font-weight:700;">Vendedora: ${vend}</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -1886,7 +1886,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   Total general seleccionado: $${totalGeneral.toLocaleString('es-AR')}
 </div>
 
-<div class="footer">Pedido generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}</div>
+<div class="footer">Pedido generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}</div>
 <br>
 <div style="text-align:center;">
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
@@ -1894,7 +1894,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1984,7 +1984,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       if(_pushPermitido){
         toast('🔔 Notificaciones activadas');
         // Notificación de prueba
-        new Notification('💜 Violeta Pedidos', {
+        new Notification('💜 Violetta Seller', {
           body: 'Las notificaciones están activas. Te avisaremos cuando llegue un pedido nuevo.',
           icon: 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Violet/3D/violet_3d.png'
         });
@@ -2058,7 +2058,7 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 </body>
 <!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 

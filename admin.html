@@ -1,6 +1,6 @@
 <!--
 ================================================================================
-  Violetta Pedidos — Sistema de gestión de pedidos para vendedoras directas
+  Violetta Seller — Sistema de gestión de pedidos para vendedoras directas
   © 2026 Carlos Caceres. Todos los derechos reservados.
   Proyecto Alpha v1.0.0
   Queda prohibida la reproducción total o parcial sin autorización expresa.
@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin · Violeta</title>
+  <title>Violetta Seller — Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#0e0a14;--surface:#1a1425;--surface2:#231a33;--border:#2e2040;--accent:#c084fc;--accent2:#818cf8;--accent3:#f472b6;--gold:#fbbf24;--text:#f0e8ff;--text2:#9b86c8;--text3:#5e4d7a;--danger:#f87171;--success:#4ade80;--warning:#fb923c;}
@@ -141,7 +141,7 @@
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <div class="login-badge">🔐 Root</div>
-    <h1 class="login-title">Panel Admin<br>Violeta</h1>
+    <h1 class="login-title">Panel Admin<br>Violetta Seller</h1>
     <p class="login-sub">Acceso exclusivo para administradores</p>
     <div class="field"><label>Usuario</label><input type="text" id="lu" placeholder="root" autocomplete="username"></div>
     <div class="field"><label>Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
@@ -152,7 +152,7 @@
 
 <div class="app" id="appWrap">
   <aside class="sidebar">
-    <div class="logo"><div class="logo-text">💜 Violeta</div><div class="logo-sub">Admin Root</div></div>
+    <div class="logo"><div class="logo-text">💜 Violetta Seller</div><div class="logo-sub">Admin Root</div></div>
     <nav class="nav">
       <div class="nav-item active" onclick="showSec('dashboard')" data-s="dashboard"><span class="icon">📊</span>Dashboard</div>
       <div class="nav-item" onclick="showSec('pedidos')" data-s="pedidos"><span class="icon">📦</span>Pedidos</div>
@@ -706,7 +706,7 @@ function imprimirReporteAdmin(){
     <td class="right bold green">${d.total?'$'+d.total.toLocaleString('es-AR'):'—'}</td></tr>`).join('');
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Reporte Admin — Violetta</title>
+<title>Reporte Admin — Violetta Seller</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -729,7 +729,7 @@ function imprimirReporteAdmin(){
 </style></head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ violetta<span>.</span></div>
+    <div class="logo">♦ Violetta Seller<span>.</span></div>
     <div style="margin-top:6px;font-size:13px;color:#6b21a8;">Panel Administrador</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -757,7 +757,7 @@ function imprimirReporteAdmin(){
   <tbody>${vendRows}</tbody>
 </table>
 
-<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}</div>
+<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}</div>
 <br>
 <div style="text-align:center;">
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
@@ -765,7 +765,7 @@ function imprimirReporteAdmin(){
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1030,7 +1030,7 @@ function imprimirAdminProveedor(){
 </style></head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ violetta<span>.</span></div>
+    <div class="logo">♦ Violetta Seller<span>.</span></div>
     <div style="margin-top:6px;font-size:13px;font-weight:700;">Panel Administrador</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -1050,7 +1050,7 @@ function imprimirAdminProveedor(){
   </tr></thead>
   <tbody>${rowsHtml}</tbody>
 </table>
-<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Cosméticos</strong> · ${fecha}</div>
+<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}</div>
 <br>
 <div style="text-align:center;">
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
@@ -1058,7 +1058,7 @@ function imprimirAdminProveedor(){
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1112,7 +1112,7 @@ function imprimirAdminProveedor(){
 </body>
 <!--
 ================================================================================
-  CHANGELOG — Violetta Pedidos
+  CHANGELOG — Violetta Seller
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
