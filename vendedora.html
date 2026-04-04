@@ -1,3 +1,11 @@
+<!--
+================================================================================
+  Violetta Pedidos — Sistema de gestión de pedidos para vendedoras directas
+  © 2026 Carlos Caceres. Todos los derechos reservados.
+  Proyecto Alpha v1.0.0
+  Queda prohibida la reproducción total o parcial sin autorización expresa.
+================================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1026,7 +1034,52 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
   <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-left:8px;font-family:inherit;">✖ Cerrar</button>
 </div>
-</body></html>`;
+</body><!--
+================================================================================
+  CHANGELOG — Violetta Pedidos
+  © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
+================================================================================
+
+  v1.0.0 — 2026-04-04
+  --------------------
+  FUNCIONALIDADES INICIALES:
+  · Sistema multi-rol: cliente, vendedora, admin
+  · Catálogo Campaña 5/26 con 166 productos y lógica 2x50%
+  · Buscador de productos por código o nombre con autocompletado
+  · Panel vendedora: gestión de pedidos, precios, estados, CBU
+  · Panel admin: dashboard, reportes, pedido proveedor global
+  · Pedido al proveedor con filtros, tabla ordenable, PDF con detalle por cliente
+  · WhatsApp automático: cliente notifica a vendedora al confirmar pedido
+  · WhatsApp automático: vendedora notifica a cliente al confirmar precio
+  · Push notifications en panel vendedora (polling 30s)
+  · Numeración automática de pedidos desde #1000
+  · PDF de ficha de pedido y reportes de estadísticas
+  · Deploy en GitHub Pages · Backend Supabase
+
+  BUGS CORREGIDOS EN DESARROLLO:
+  · [FIX] Panel de precios vacío al abrir: togglePrecioPanel leía del HTML
+          (con escapes rotos) en lugar de leer de misPedidos en memoria
+  · [FIX] Admin login no reaccionaba: error de sintaxis JS por llave faltante
+          en eliminarPedido y escapes Python incorrectos en confirmarEliminar
+  · [FIX] Reportes admin ocultaban todo: showRep usaba querySelectorAll
+          '[id^="rep-"]' que incluía sub-elementos internos
+  · [FIX] Precios se pisaban al reabrir panel de precios: ahora carga
+          items_precio guardados con prioridad sobre catálogo
+  · [FIX] Cliente no aparecía en lista tras guardar pedido: guardarPedido
+          no actualizaba misClientes en memoria local
+  · [FIX] Admin credenciales vacías en dispositivo nuevo: SU/SK hardcodeados
+          como defaults, localStorage solo como override
+  · [FIX] detectarPromos() llamada sin argumento pero definida con parámetro
+          prods → TypeError que bloqueaba el avance al paso de confirmación
+  · [FIX] Botón "Revisar y confirmar" no avanzaba: listener global de click
+          interceptaba el evento antes de que llegara al botón; cambiado a
+          mousedown para cerrar dropdown sin interferir con navegación
+  · [FIX] Dropdown de productos no respondía al toque: div.outerHTML no
+          serializa addEventListener → reemplazado por elegirProductoIdx()
+          con índice sobre array global window._buscarHits
+================================================================================
+-->
+</html>`;
 
     const win=window.open('','_blank','width=720,height=900');
     win.document.write(html);
@@ -1109,7 +1162,52 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
   <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-left:8px;font-family:inherit;">✖ Cerrar</button>
 </div>
-</body></html>`;
+</body><!--
+================================================================================
+  CHANGELOG — Violetta Pedidos
+  © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
+================================================================================
+
+  v1.0.0 — 2026-04-04
+  --------------------
+  FUNCIONALIDADES INICIALES:
+  · Sistema multi-rol: cliente, vendedora, admin
+  · Catálogo Campaña 5/26 con 166 productos y lógica 2x50%
+  · Buscador de productos por código o nombre con autocompletado
+  · Panel vendedora: gestión de pedidos, precios, estados, CBU
+  · Panel admin: dashboard, reportes, pedido proveedor global
+  · Pedido al proveedor con filtros, tabla ordenable, PDF con detalle por cliente
+  · WhatsApp automático: cliente notifica a vendedora al confirmar pedido
+  · WhatsApp automático: vendedora notifica a cliente al confirmar precio
+  · Push notifications en panel vendedora (polling 30s)
+  · Numeración automática de pedidos desde #1000
+  · PDF de ficha de pedido y reportes de estadísticas
+  · Deploy en GitHub Pages · Backend Supabase
+
+  BUGS CORREGIDOS EN DESARROLLO:
+  · [FIX] Panel de precios vacío al abrir: togglePrecioPanel leía del HTML
+          (con escapes rotos) en lugar de leer de misPedidos en memoria
+  · [FIX] Admin login no reaccionaba: error de sintaxis JS por llave faltante
+          en eliminarPedido y escapes Python incorrectos en confirmarEliminar
+  · [FIX] Reportes admin ocultaban todo: showRep usaba querySelectorAll
+          '[id^="rep-"]' que incluía sub-elementos internos
+  · [FIX] Precios se pisaban al reabrir panel de precios: ahora carga
+          items_precio guardados con prioridad sobre catálogo
+  · [FIX] Cliente no aparecía en lista tras guardar pedido: guardarPedido
+          no actualizaba misClientes en memoria local
+  · [FIX] Admin credenciales vacías en dispositivo nuevo: SU/SK hardcodeados
+          como defaults, localStorage solo como override
+  · [FIX] detectarPromos() llamada sin argumento pero definida con parámetro
+          prods → TypeError que bloqueaba el avance al paso de confirmación
+  · [FIX] Botón "Revisar y confirmar" no avanzaba: listener global de click
+          interceptaba el evento antes de que llegara al botón; cambiado a
+          mousedown para cerrar dropdown sin interferir con navegación
+  · [FIX] Dropdown de productos no respondía al toque: div.outerHTML no
+          serializa addEventListener → reemplazado por elegirProductoIdx()
+          con índice sobre array global window._buscarHits
+================================================================================
+-->
+</html>`;
 
     const win=window.open('','_blank','width=760,height=900');
     win.document.write(html);
@@ -1794,7 +1892,52 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
   <button onclick="window.close()" style="background:#f3f4f6;color:#374151;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-left:8px;font-family:inherit;">✖ Cerrar</button>
 </div>
-</body></html>`;
+</body><!--
+================================================================================
+  CHANGELOG — Violetta Pedidos
+  © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
+================================================================================
+
+  v1.0.0 — 2026-04-04
+  --------------------
+  FUNCIONALIDADES INICIALES:
+  · Sistema multi-rol: cliente, vendedora, admin
+  · Catálogo Campaña 5/26 con 166 productos y lógica 2x50%
+  · Buscador de productos por código o nombre con autocompletado
+  · Panel vendedora: gestión de pedidos, precios, estados, CBU
+  · Panel admin: dashboard, reportes, pedido proveedor global
+  · Pedido al proveedor con filtros, tabla ordenable, PDF con detalle por cliente
+  · WhatsApp automático: cliente notifica a vendedora al confirmar pedido
+  · WhatsApp automático: vendedora notifica a cliente al confirmar precio
+  · Push notifications en panel vendedora (polling 30s)
+  · Numeración automática de pedidos desde #1000
+  · PDF de ficha de pedido y reportes de estadísticas
+  · Deploy en GitHub Pages · Backend Supabase
+
+  BUGS CORREGIDOS EN DESARROLLO:
+  · [FIX] Panel de precios vacío al abrir: togglePrecioPanel leía del HTML
+          (con escapes rotos) en lugar de leer de misPedidos en memoria
+  · [FIX] Admin login no reaccionaba: error de sintaxis JS por llave faltante
+          en eliminarPedido y escapes Python incorrectos en confirmarEliminar
+  · [FIX] Reportes admin ocultaban todo: showRep usaba querySelectorAll
+          '[id^="rep-"]' que incluía sub-elementos internos
+  · [FIX] Precios se pisaban al reabrir panel de precios: ahora carga
+          items_precio guardados con prioridad sobre catálogo
+  · [FIX] Cliente no aparecía en lista tras guardar pedido: guardarPedido
+          no actualizaba misClientes en memoria local
+  · [FIX] Admin credenciales vacías en dispositivo nuevo: SU/SK hardcodeados
+          como defaults, localStorage solo como override
+  · [FIX] detectarPromos() llamada sin argumento pero definida con parámetro
+          prods → TypeError que bloqueaba el avance al paso de confirmación
+  · [FIX] Botón "Revisar y confirmar" no avanzaba: listener global de click
+          interceptaba el evento antes de que llegara al botón; cambiado a
+          mousedown para cerrar dropdown sin interferir con navegación
+  · [FIX] Dropdown de productos no respondía al toque: div.outerHTML no
+          serializa addEventListener → reemplazado por elegirProductoIdx()
+          con índice sobre array global window._buscarHits
+================================================================================
+-->
+</html>`;
 
     const win=window.open('','_blank','width=800,height=900');
     win.document.write(html);
@@ -1913,4 +2056,49 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   // ═══════════════════════════════════════════════════════════════════════════
 </script>
 </body>
+<!--
+================================================================================
+  CHANGELOG — Violetta Pedidos
+  © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
+================================================================================
+
+  v1.0.0 — 2026-04-04
+  --------------------
+  FUNCIONALIDADES INICIALES:
+  · Sistema multi-rol: cliente, vendedora, admin
+  · Catálogo Campaña 5/26 con 166 productos y lógica 2x50%
+  · Buscador de productos por código o nombre con autocompletado
+  · Panel vendedora: gestión de pedidos, precios, estados, CBU
+  · Panel admin: dashboard, reportes, pedido proveedor global
+  · Pedido al proveedor con filtros, tabla ordenable, PDF con detalle por cliente
+  · WhatsApp automático: cliente notifica a vendedora al confirmar pedido
+  · WhatsApp automático: vendedora notifica a cliente al confirmar precio
+  · Push notifications en panel vendedora (polling 30s)
+  · Numeración automática de pedidos desde #1000
+  · PDF de ficha de pedido y reportes de estadísticas
+  · Deploy en GitHub Pages · Backend Supabase
+
+  BUGS CORREGIDOS EN DESARROLLO:
+  · [FIX] Panel de precios vacío al abrir: togglePrecioPanel leía del HTML
+          (con escapes rotos) en lugar de leer de misPedidos en memoria
+  · [FIX] Admin login no reaccionaba: error de sintaxis JS por llave faltante
+          en eliminarPedido y escapes Python incorrectos en confirmarEliminar
+  · [FIX] Reportes admin ocultaban todo: showRep usaba querySelectorAll
+          '[id^="rep-"]' que incluía sub-elementos internos
+  · [FIX] Precios se pisaban al reabrir panel de precios: ahora carga
+          items_precio guardados con prioridad sobre catálogo
+  · [FIX] Cliente no aparecía en lista tras guardar pedido: guardarPedido
+          no actualizaba misClientes en memoria local
+  · [FIX] Admin credenciales vacías en dispositivo nuevo: SU/SK hardcodeados
+          como defaults, localStorage solo como override
+  · [FIX] detectarPromos() llamada sin argumento pero definida con parámetro
+          prods → TypeError que bloqueaba el avance al paso de confirmación
+  · [FIX] Botón "Revisar y confirmar" no avanzaba: listener global de click
+          interceptaba el evento antes de que llegara al botón; cambiado a
+          mousedown para cerrar dropdown sin interferir con navegación
+  · [FIX] Dropdown de productos no respondía al toque: div.outerHTML no
+          serializa addEventListener → reemplazado por elegirProductoIdx()
+          con índice sobre array global window._buscarHits
+================================================================================
+-->
 </html>
