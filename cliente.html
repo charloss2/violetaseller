@@ -61,6 +61,29 @@
     .prod-qty{width:62px;background:white;border:2px solid var(--border);padding:10px;border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);text-align:center;}
     .prod-qty:focus{outline:none;border-color:var(--accent);}
     .del-btn{background:#fee2e2;color:#ef4444;border:none;padding:10px 12px;border-radius:7px;cursor:pointer;font-size:13px;}
+    .buscador-prod{background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:14px 16px;}
+    .buscador-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .buscador-row:last-of-type{margin-bottom:0;}
+    .buscador-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;min-width:62px;}
+    .buscador-input{width:100%;background:white;border:2px solid var(--border);color:var(--text);padding:11px 14px;border-radius:10px;font-size:15px;font-family:inherit;transition:border-color .2s,box-shadow .2s;}
+    .buscador-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(219,39,119,.12);}
+    .buscador-input.ok{border-color:#10b981;background:#f0fdf4;}
+    .buscador-input.err{border-color:#ef4444;background:#fef2f2;}
+    .cod-estado{font-size:11px;margin-top:4px;font-weight:600;min-height:16px;}
+    .cod-estado.ok{color:#10b981;}
+    .cod-estado.err{color:#ef4444;}
+    .cod-estado.loading{color:#9ca3af;}
+    .nombre-dropdown{position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--border);border-radius:11px;box-shadow:0 8px 28px rgba(219,39,119,.15);z-index:200;max-height:240px;overflow-y:auto;margin-top:4px;}
+    .ndrop-item{padding:11px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;transition:background .12s;}
+    .ndrop-item:hover{background:#fdf2f8;}
+    .ndrop-item:last-child{border-bottom:none;}
+    .ndrop-cod{background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;}
+    .ndrop-nombre{flex:1;font-size:13px;font-weight:600;color:#1e0a3c;}
+    .ndrop-promo{font-size:10px;color:#059669;font-weight:700;}
+    .ndrop-nada{padding:14px;text-align:center;color:#ef4444;font-size:13px;font-weight:600;}
+    .btn-agregar-prod{flex:1;padding:11px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;}
+    .btn-agregar-prod:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(219,39,119,.3);}
+    .btn-agregar-prod:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed;transform:none;box-shadow:none;}
     .prod-resultado{padding:10px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;transition:background .15s;}
     .prod-resultado:hover{background:#fdf2f8;}
     .prod-resultado:last-child{border-bottom:none;}
@@ -230,22 +253,55 @@
         <!-- Productos -->
         <div class="card">
           <div class="card-title">🛍️ ¿Qué productos querés pedir?</div>
+          <p style="font-size:12px;color:#9ca3af;margin-bottom:14px;">Buscá por código o por nombre — se completan solos al elegir.</p>
 
-          <!-- Buscador por código/nombre -->
-          <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <div style="flex:1;position:relative;">
-              <input type="text" id="buscarProdCli" placeholder="🔍 Código (ej: 101819) o palabras clave..."
-                style="width:100%;background:var(--bg);border:2px solid var(--border);color:var(--text);padding:12px 14px;border-radius:11px;font-size:15px;font-family:inherit;"
-                oninput="buscarProductoCli()" autocomplete="off">
-              <div id="buscar-resultados" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--border);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:100;max-height:220px;overflow-y:auto;margin-top:4px;"></div>
+          <!-- Buscador doble: código + nombre -->
+          <div class="buscador-prod">
+
+            <!-- Fila: Código -->
+            <div class="buscador-row">
+              <label class="buscador-label">Código</label>
+              <div style="position:relative;flex:1;">
+                <input type="text" id="inp-codigo" inputmode="numeric" pattern="[0-9]*"
+                  placeholder="Ej: 101819" maxlength="8" autocomplete="off"
+                  class="buscador-input" id="inp-codigo"
+                  oninput="onCodigoInput()" onblur="onCodigoBlur()">
+                <div id="cod-estado" class="cod-estado"></div>
+              </div>
             </div>
+
+            <!-- Fila: Nombre -->
+            <div class="buscador-row" style="position:relative;">
+              <label class="buscador-label">Nombre</label>
+              <div style="position:relative;flex:1;">
+                <input type="text" id="inp-nombre" placeholder="Ej: Sex for Women Intense" autocomplete="off"
+                  class="buscador-input"
+                  oninput="onNombreInput()">
+                <div id="nombre-dropdown" class="nombre-dropdown" style="display:none;"></div>
+              </div>
+            </div>
+
+            <!-- Fila: Cantidad + Agregar -->
+            <div class="buscador-row">
+              <label class="buscador-label">Cantidad</label>
+              <div style="display:flex;gap:10px;align-items:center;flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:6px 12px;">
+                  <button onclick="cambiarQtyInput(-1)" class="qty-btn">−</button>
+                  <span id="inp-qty-display" style="font-size:18px;font-weight:700;min-width:28px;text-align:center;">1</span>
+                  <button onclick="cambiarQtyInput(1)" class="qty-btn">+</button>
+                </div>
+                <button class="btn-agregar-prod" onclick="agregarDesdeInputs()" id="btn-agregar">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+            <div id="buscar-msg" style="font-size:12px;min-height:16px;margin-top:4px;padding:0 2px;"></div>
           </div>
-          <div id="buscar-msg" style="font-size:12px;color:#9ca3af;margin-bottom:10px;min-height:16px;"></div>
 
           <!-- Lista de productos agregados -->
-          <div id="pedProdList"></div>
-          <div id="prod-list-empty" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;display:block;">
-            Buscá un producto arriba para agregarlo al pedido
+          <div id="pedProdList" style="margin-top:16px;"></div>
+          <div id="prod-list-empty" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;">
+            Aún no agregaste productos
           </div>
         </div>
 
@@ -437,6 +493,8 @@
 
   // ── Catálogo y búsqueda de productos ────────────────────────────────────────
   let pedidoItems = []; // [{codigo, nombre, precio, promo, qty}]
+  let prodActual = null; // producto encontrado y listo para agregar
+  let qtyActual = 1;
 
   async function onCampanaChange(){
     const num = document.getElementById('campNum').value.trim();
@@ -615,10 +673,16 @@
   // Reset al iniciar nuevo pedido
   function resetPedidoItems(){
     pedidoItems = [];
+    prodActual = null;
+    qtyActual = 1;
     renderPedidoItems();
-    document.getElementById('buscarProdCli').value='';
-    document.getElementById('buscar-msg').textContent='';
-    document.getElementById('buscar-resultados').style.display='none';
+    const ic = document.getElementById('inp-codigo'); if(ic){ic.value='';ic.classList.remove('ok','err');}
+    const in_ = document.getElementById('inp-nombre'); if(in_) in_.value='';
+    const ce = document.getElementById('cod-estado'); if(ce){ce.textContent='';ce.className='cod-estado';}
+    const dd = document.getElementById('nombre-dropdown'); if(dd) dd.style.display='none';
+    const bm = document.getElementById('buscar-msg'); if(bm) bm.textContent='';
+    const qd = document.getElementById('inp-qty-display'); if(qd) qd.textContent='1';
+    setBtnAgregar(false);
   }
 
   function addPedProd(){ /* legacy — no usado */ }
