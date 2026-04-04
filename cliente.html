@@ -253,53 +253,42 @@
         <!-- Productos -->
         <div class="card">
           <div class="card-title">🛍️ ¿Qué productos querés pedir?</div>
-          <p style="font-size:12px;color:#9ca3af;margin-bottom:14px;">Buscá por código o por nombre — se completan solos al elegir.</p>
+          <p style="font-size:12px;color:#9ca3af;margin-bottom:12px;">Escribí el código o el nombre — el sistema te muestra las opciones.</p>
 
-          <!-- Buscador doble: código + nombre -->
-          <div class="buscador-prod">
+          <!-- Campo unificado -->
+          <div style="position:relative;margin-bottom:6px;">
+            <input type="text" id="inp-buscar"
+              placeholder="🔍 Código (101819) o nombre del producto..."
+              autocomplete="off"
+              style="width:100%;background:white;border:2px solid var(--border);color:var(--text);padding:13px 16px;border-radius:12px;font-size:15px;font-family:inherit;transition:border-color .2s;"
+              oninput="onBuscarInput()" onfocus="onBuscarInput()">
+            <div id="buscar-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(219,39,119,.15);z-index:200;max-height:260px;overflow-y:auto;margin-top:4px;"></div>
+          </div>
+          <div id="buscar-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;"></div>
 
-            <!-- Fila: Código -->
-            <div class="buscador-row">
-              <label class="buscador-label">Código</label>
-              <div style="position:relative;flex:1;">
-                <input type="text" id="inp-codigo" inputmode="numeric" pattern="[0-9]*"
-                  placeholder="Ej: 101819" maxlength="8" autocomplete="off"
-                  class="buscador-input" id="inp-codigo"
-                  oninput="onCodigoInput()" onblur="onCodigoBlur()">
-                <div id="cod-estado" class="cod-estado"></div>
-              </div>
+          <!-- Producto seleccionado + cantidad -->
+          <div id="prod-seleccionado" style="display:none;background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:none;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span id="ps-cod" style="background:#ede9fe;color:#7c3aed;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;"></span>
+              <span id="ps-nombre" style="flex:1;font-size:14px;font-weight:700;color:var(--text);"></span>
+              <span id="ps-promo" style="font-size:11px;color:#059669;font-weight:700;"></span>
             </div>
-
-            <!-- Fila: Nombre -->
-            <div class="buscador-row" style="position:relative;">
-              <label class="buscador-label">Nombre</label>
-              <div style="position:relative;flex:1;">
-                <input type="text" id="inp-nombre" placeholder="Ej: Sex for Women Intense" autocomplete="off"
-                  class="buscador-input"
-                  oninput="onNombreInput()">
-                <div id="nombre-dropdown" class="nombre-dropdown" style="display:none;"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+              <span style="font-size:12px;color:#9ca3af;font-weight:600;">Cantidad:</span>
+              <div style="display:flex;align-items:center;gap:8px;background:white;border:2px solid var(--border);border-radius:10px;padding:5px 10px;">
+                <button onclick="cambiarQtyInput(-1)" class="qty-btn">−</button>
+                <span id="inp-qty-display" style="font-size:17px;font-weight:700;min-width:26px;text-align:center;">1</span>
+                <button onclick="cambiarQtyInput(1)" class="qty-btn">+</button>
               </div>
+              <button onclick="agregarDesdeInputs()"
+                style="flex:1;padding:10px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+                + Agregar al pedido
+              </button>
             </div>
-
-            <!-- Fila: Cantidad + Agregar -->
-            <div class="buscador-row">
-              <label class="buscador-label">Cantidad</label>
-              <div style="display:flex;gap:10px;align-items:center;flex:1;">
-                <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:6px 12px;">
-                  <button onclick="cambiarQtyInput(-1)" class="qty-btn">−</button>
-                  <span id="inp-qty-display" style="font-size:18px;font-weight:700;min-width:28px;text-align:center;">1</span>
-                  <button onclick="cambiarQtyInput(1)" class="qty-btn">+</button>
-                </div>
-                <button class="btn-agregar-prod" onclick="agregarDesdeInputs()" id="btn-agregar">
-                  + Agregar
-                </button>
-              </div>
-            </div>
-            <div id="buscar-msg" style="font-size:12px;min-height:16px;margin-top:4px;padding:0 2px;"></div>
           </div>
 
           <!-- Lista de productos agregados -->
-          <div id="pedProdList" style="margin-top:16px;"></div>
+          <div id="pedProdList"></div>
           <div id="prod-list-empty" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;">
             Aún no agregaste productos
           </div>
@@ -493,8 +482,6 @@
 
   // ── Catálogo y búsqueda de productos ────────────────────────────────────────
   let pedidoItems = []; // [{codigo, nombre, precio, promo, qty}]
-  let prodActual = null; // producto encontrado y listo para agregar
-  let qtyActual = 1;
 
   async function onCampanaChange(){
     const num = document.getElementById('campNum').value.trim();
@@ -524,98 +511,130 @@
     }
   }
 
-  function buscarProductoCli(){
-    const q = (document.getElementById('buscarProdCli').value || '').trim();
-    const res = document.getElementById('buscar-resultados');
-    const msg = document.getElementById('buscar-msg');
+  // ── Buscador unificado ────────────────────────────────────────────────────────
+  let prodActual = null;
+  let qtyActual  = 1;
 
-    if(q.length < 1){ res.style.display='none'; msg.textContent=''; return; }
+  function onBuscarInput(){
+    const q   = (document.getElementById('inp-buscar').value || '').trim();
+    const dd  = document.getElementById('buscar-dropdown');
+    const msg = document.getElementById('buscar-msg');
+    prodActual = null;
+    ocultarSeleccionado();
+
+    if(q.length < 1){ dd.style.display='none'; msg.textContent=''; return; }
 
     if(!allProductosCli.length){
-      msg.textContent = '⚠️ Primero ingresá el número de campaña para cargar el catálogo.';
+      msg.textContent = '⚠️ Primero ingresá el número de campaña.';
       msg.style.color = '#d97706';
-      res.style.display='none';
+      dd.style.display = 'none';
       return;
     }
 
-    // Buscar: prioridad código exacto → código parcial → palabras clave
-    let hits = [];
-    const qLow = q.toLowerCase();
     const esNumero = /^\d+$/.test(q);
+    let hits = [];
 
     if(esNumero){
-      // Código exacto primero
-      const exacto = allProductosCli.filter(p => p.codigo === q);
-      if(exacto.length) hits = exacto;
-      else hits = allProductosCli.filter(p => (p.codigo||'').startsWith(q));
+      // Código exacto → seleccionar directo
+      const exacto = allProductosCli.find(p => p.codigo === q);
+      if(exacto){ elegirProducto(exacto); dd.style.display='none'; msg.textContent=''; return; }
+      // Código parcial
+      hits = allProductosCli.filter(p => (p.codigo||'').startsWith(q));
     }
 
     if(!hits.length){
-      // Palabras clave en nombre
-      const palabras = qLow.split(' ').filter(p=>p.length>2);
-      hits = allProductosCli.filter(p => {
-        const nom = p.nombre.toLowerCase();
-        return palabras.every(pal => nom.includes(pal));
-      });
+      const palabras = q.toLowerCase().split(' ').filter(p=>p.length>1);
+      hits = allProductosCli.filter(p => palabras.every(pal => p.nombre.toLowerCase().includes(pal)));
     }
-
     if(!hits.length && q.length >= 3){
-      // Búsqueda flexible — alguna palabra
-      hits = allProductosCli.filter(p => {
-        const nom = p.nombre.toLowerCase();
-        return qLow.split(' ').some(pal => pal.length>2 && nom.includes(pal));
-      }).slice(0,5);
+      const palabras = q.toLowerCase().split(' ').filter(p=>p.length>2);
+      hits = allProductosCli.filter(p => palabras.some(pal => p.nombre.toLowerCase().includes(pal))).slice(0,6);
     }
 
     if(!hits.length){
-      res.style.display='none';
-      msg.textContent = '❌ Sin coincidencias para "' + q + '" en el catálogo de esta campaña.';
-      msg.style.color = '#dc2626';
-      return;
+      dd.style.display='block';
+      dd.innerHTML='<div style="padding:14px;text-align:center;color:#ef4444;font-size:13px;font-weight:600;">❌ Sin coincidencias para "'+q+'" en esta campaña.</div>';
+      msg.textContent=''; return;
     }
 
-    msg.textContent = hits.length + ' resultado' + (hits.length!==1?'s':'') + ' encontrado' + (hits.length!==1?'s':'');
-    msg.style.color = '#9ca3af';
-
-    res.style.display = 'block';
-    res.innerHTML = hits.slice(0,8).map(p => {
-      const tachado = p.precio_tachado ? '<span style="text-decoration:line-through;color:#9ca3af;font-size:10px;margin-left:4px;">$' + Number(p.precio_tachado).toLocaleString('es-AR') + '</span>' : '';
-      const promo   = p.promo_tipo && p.promo_tipo !== 'normal'
-        ? '<div class="prod-promo">' + (p.promo_tipo==='2x50'?'🎉 2x50% con otro del grupo':p.promo_tipo==='lanzamiento'?'⚡ Precio lanzamiento':p.promo_tipo==='oferta_especial'?'✨ Oferta especial':'') + '</div>'
-        : '';
-      return '<div class="prod-resultado" onclick="agregarProductoCli(' + JSON.stringify(p).replace(/"/g,"'") + ')">' +
-        '<span class="cod-badge">' + (p.codigo||'—') + '</span>' +
-        '<div class="prod-info">' +
-          '<div class="prod-nombre">' + p.nombre + '</div>' +
-          promo +
-        '</div>' +
-        '<span style="font-size:18px;color:var(--accent);">+</span>' +
-      '</div>';
+    msg.textContent='';
+    dd.style.display='block';
+    dd.innerHTML = hits.slice(0,8).map(function(p){
+      var promoLabel = (p.promo_tipo && p.promo_tipo!=='normal')
+        ? '<span style="font-size:10px;color:#059669;font-weight:700;margin-left:6px;">'
+          +(p.promo_tipo==='2x50'?'🎉 2x50%':p.promo_tipo==='lanzamiento'?'⚡ Lanzamiento':p.promo_tipo==='oferta_especial'?'✨ Oferta especial':'')
+          +'</span>' : '';
+      var div = document.createElement('div');
+      div.style.cssText = 'padding:11px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;';
+      div.addEventListener('mouseover', function(){ this.style.background='#fdf2f8'; });
+      div.addEventListener('mouseout',  function(){ this.style.background=''; });
+      div.addEventListener('click',     function(){ elegirProducto(p); });
+      div.innerHTML = '<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;min-width:58px;text-align:center;">'+(p.codigo||'—')+'</span>'
+        +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+p.nombre+promoLabel+'</div></div>'
+        +'<span style="font-size:18px;color:var(--accent);">+</span>';
+      return div.outerHTML;
     }).join('');
   }
 
-  function agregarProductoCli(prod){
-    // Cerrar resultados
-    document.getElementById('buscar-resultados').style.display='none';
-    document.getElementById('buscarProdCli').value='';
-    document.getElementById('buscar-msg').textContent='';
-
-    // Si ya existe el mismo código, sumar cantidad
-    const existente = pedidoItems.find(it => it.codigo === prod.codigo);
-    if(existente){ existente.qty++; renderPedidoItems(); return; }
-
-    pedidoItems.push({
-      codigo: prod.codigo || '',
-      nombre: prod.nombre,
-      precio: prod.precio,
-      precioProm: prod.precio_promo_2 || null,
-      tachado: prod.precio_tachado || null,
-      promo:  prod.promo_tipo || 'normal',
-      promoGrupo: prod.promo_grupo || '',
-      qty: 1
-    });
-    renderPedidoItems();
+  function elegirProductoEnc(el){
+    try{ elegirProducto(JSON.parse(decodeURIComponent(el.dataset.prod))); }catch(e){}
   }
+  function elegirProducto(prod){
+    prodActual = prod;
+    document.getElementById('inp-buscar').value = prod.nombre;
+    document.getElementById('buscar-dropdown').style.display = 'none';
+    document.getElementById('buscar-msg').textContent = '';
+    const ps = document.getElementById('prod-seleccionado');
+    ps.style.display = 'block';
+    document.getElementById('ps-cod').textContent    = prod.codigo || '—';
+    document.getElementById('ps-nombre').textContent = prod.nombre;
+    const pt = prod.promo_tipo==='2x50'?'🎉 2x50%':prod.promo_tipo==='lanzamiento'?'⚡ Lanzamiento':prod.promo_tipo==='oferta_especial'?'✨ Oferta especial':prod.promo_tipo==='escala'?'🎨 Precio escala':'';
+    document.getElementById('ps-promo').textContent = pt;
+    qtyActual = 1;
+    document.getElementById('inp-qty-display').textContent = '1';
+  }
+
+  function ocultarSeleccionado(){
+    const ps = document.getElementById('prod-seleccionado');
+    if(ps) ps.style.display='none';
+  }
+
+  function cambiarQtyInput(delta){
+    qtyActual = Math.max(1, qtyActual + delta);
+    document.getElementById('inp-qty-display').textContent = qtyActual;
+  }
+
+  function setBtnAgregar(){}
+
+  function agregarDesdeInputs(){
+    if(!prodActual) return;
+    const existente = pedidoItems.find(it => it.codigo === prodActual.codigo && prodActual.codigo);
+    if(existente){ existente.qty += qtyActual; }
+    else {
+      pedidoItems.push({
+        codigo:prodActual.codigo||'', nombre:prodActual.nombre,
+        precio:prodActual.precio, precioProm:prodActual.precio_promo_2||null,
+        tachado:prodActual.precio_tachado||null,
+        promo:prodActual.promo_tipo||'normal', promoGrupo:prodActual.promo_grupo||'',
+        qty:qtyActual
+      });
+    }
+    document.getElementById('inp-buscar').value='';
+    document.getElementById('buscar-dropdown').style.display='none';
+    document.getElementById('buscar-msg').textContent='';
+    ocultarSeleccionado();
+    qtyActual=1; prodActual=null;
+    renderPedidoItems();
+    document.getElementById('inp-buscar').focus();
+  }
+
+  function agregarProductoCli(prod){ elegirProducto(prod); }
+
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('#inp-buscar') && !e.target.closest('#buscar-dropdown')){
+      const dd=document.getElementById('buscar-dropdown'); if(dd) dd.style.display='none';
+    }
+  });
 
   function cambiarQty(idx, delta){
     pedidoItems[idx].qty = Math.max(1, (pedidoItems[idx].qty || 1) + delta);
@@ -674,15 +693,13 @@
   function resetPedidoItems(){
     pedidoItems = [];
     prodActual = null;
-    qtyActual = 1;
+    qtyActual  = 1;
     renderPedidoItems();
-    const ic = document.getElementById('inp-codigo'); if(ic){ic.value='';ic.classList.remove('ok','err');}
-    const in_ = document.getElementById('inp-nombre'); if(in_) in_.value='';
-    const ce = document.getElementById('cod-estado'); if(ce){ce.textContent='';ce.className='cod-estado';}
-    const dd = document.getElementById('nombre-dropdown'); if(dd) dd.style.display='none';
+    const ib = document.getElementById('inp-buscar'); if(ib) ib.value='';
+    const dd = document.getElementById('buscar-dropdown'); if(dd) dd.style.display='none';
     const bm = document.getElementById('buscar-msg'); if(bm) bm.textContent='';
     const qd = document.getElementById('inp-qty-display'); if(qd) qd.textContent='1';
-    setBtnAgregar(false);
+    ocultarSeleccionado();
   }
 
   function addPedProd(){ /* legacy — no usado */ }
@@ -714,7 +731,7 @@
       }
       if(!pedidoItems.length){
         showErr('perr1','⚠️ Agregá al menos un producto con el buscador de abajo.');
-        document.getElementById('inp-codigo').focus();
+        document.getElementById('inp-buscar').focus();
         return;
       }
       if(!tel){
