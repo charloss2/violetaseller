@@ -690,16 +690,48 @@
 
   function pGoStep(n){
     if(n===2){
-      const camp=document.getElementById('campNum').value.trim();
-      const prods=getProds();
-      const pago=document.getElementById('pPago').value;
-      const dir=document.getElementById('pDireccion').value.trim();
-      const tel=document.getElementById('pClienteTel').value.trim();
-      const vend=document.getElementById('selVendedora').value;
-      if(!vend){showErr('perr1','⚠️ Elegí una vendedora.');return;}
-      if(!camp){showErr('perr1','⚠️ Ingresá el número de campaña.');return;}
-      if(!pedidoItems.length){showErr('perr1','⚠️ Agregá al menos un producto usando el buscador.');return;}
-      if(!pago||!dir||!tel){showErr('perr1','⚠️ Completá teléfono, dirección y forma de pago.');return;}
+      const camp = document.getElementById('campNum').value.trim();
+      const pago = document.getElementById('pPago').value.trim();
+      const dir  = document.getElementById('pDireccion').value.trim();
+      const tel  = document.getElementById('pClienteTel').value.trim();
+      const vend = document.getElementById('selVendedora').value;
+
+      // Validar cada campo con mensaje específico
+      if(!vend){
+        showErr('perr1','⚠️ Elegí una vendedora del listado.');
+        document.getElementById('selVendedora').focus();
+        return;
+      }
+      if(!camp){
+        showErr('perr1','⚠️ Ingresá el número de campaña (ej: 5).');
+        document.getElementById('campNum').focus();
+        return;
+      }
+      if(!allProductosCli.length){
+        showErr('perr1','⚠️ El catálogo no se cargó. Volvé a escribir el número de campaña.');
+        document.getElementById('campNum').focus();
+        return;
+      }
+      if(!pedidoItems.length){
+        showErr('perr1','⚠️ Agregá al menos un producto con el buscador de abajo.');
+        document.getElementById('inp-codigo').focus();
+        return;
+      }
+      if(!tel){
+        showErr('perr1','⚠️ Ingresá tu teléfono o WhatsApp para que te pueda contactar la vendedora.');
+        document.getElementById('pClienteTel').focus();
+        return;
+      }
+      if(!dir){
+        showErr('perr1','⚠️ Ingresá tu dirección de entrega.');
+        document.getElementById('pDireccion').focus();
+        return;
+      }
+      if(!pago){
+        showErr('perr1','⚠️ Elegí una forma de pago.');
+        document.getElementById('pPago').focus();
+        return;
+      }
       buildSummary();
       mostrarCBU(pago);
     }
@@ -713,7 +745,14 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}
+  function showErr(id,msg){
+    const e=document.getElementById(id);
+    if(!e) return;
+    e.textContent=msg;
+    e.style.display='block';
+    e.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>e.style.display='none',6000);
+  }
 
   function buildSummary(){
     const sel=document.getElementById('selVendedora');
