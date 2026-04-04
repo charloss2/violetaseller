@@ -261,13 +261,13 @@
               placeholder="🔍 Código (101819) o nombre del producto..."
               autocomplete="off"
               style="width:100%;background:white;border:2px solid var(--border);color:var(--text);padding:13px 16px;border-radius:12px;font-size:15px;font-family:inherit;transition:border-color .2s;"
-              oninput="onBuscarInput()" onfocus="onBuscarInput()">
+              oninput="onBuscarInput()">
             <div id="buscar-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(219,39,119,.15);z-index:200;max-height:260px;overflow-y:auto;margin-top:4px;"></div>
           </div>
           <div id="buscar-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;"></div>
 
           <!-- Producto seleccionado + cantidad -->
-          <div id="prod-seleccionado" style="display:none;background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:none;">
+          <div id="prod-seleccionado" style="display:none;background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <span id="ps-cod" style="background:#ede9fe;color:#7c3aed;font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;"></span>
               <span id="ps-nombre" style="flex:1;font-size:14px;font-weight:700;color:var(--text);"></span>
