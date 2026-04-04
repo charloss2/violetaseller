@@ -104,6 +104,8 @@
     .prod-card .pc-del{background:none;border:none;cursor:pointer;font-size:18px;color:#f9a8d4;padding:4px;}
     .add-prod-btn{width:100%;padding:12px;background:var(--bg);border:2px dashed var(--border);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;border-radius:11px;}
     .add-prod-btn:hover{border-color:var(--accent);background:white;}
+    .buscar-drop-item{padding:11px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;transition:background .12s;}
+    .buscar-drop-item:hover{background:#fdf2f8;}
     .summary-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #fce7f3;}
     .summary-row:last-child{border-bottom:none;}
     .summary-label{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;}
@@ -559,23 +561,27 @@
 
     msg.textContent='';
     dd.style.display='block';
-    dd.innerHTML = hits.slice(0,8).map(function(p){
+    // Guardar hits en variable global para el onclick
+    window._buscarHits = hits.slice(0,8);
+    dd.innerHTML = window._buscarHits.map(function(p, idx){
       var promoLabel = (p.promo_tipo && p.promo_tipo!=='normal')
         ? '<span style="font-size:10px;color:#059669;font-weight:700;margin-left:6px;">'
           +(p.promo_tipo==='2x50'?'🎉 2x50%':p.promo_tipo==='lanzamiento'?'⚡ Lanzamiento':p.promo_tipo==='oferta_especial'?'✨ Oferta especial':'')
           +'</span>' : '';
-      var div = document.createElement('div');
-      div.style.cssText = 'padding:11px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;';
-      div.addEventListener('mouseover', function(){ this.style.background='#fdf2f8'; });
-      div.addEventListener('mouseout',  function(){ this.style.background=''; });
-      div.addEventListener('click',     function(){ elegirProducto(p); });
-      div.innerHTML = '<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;min-width:58px;text-align:center;">'+(p.codigo||'—')+'</span>'
+      return '<div onclick="elegirProductoIdx('+idx+')" '
+        +'style="padding:11px 14px;cursor:pointer;border-bottom:1px solid #fce7f3;display:flex;align-items:center;gap:10px;" '
+        +'class="buscar-drop-item">'
+        +'<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;min-width:58px;text-align:center;">'+(p.codigo||'—')+'</span>'
         +'<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+p.nombre+promoLabel+'</div></div>'
-        +'<span style="font-size:18px;color:var(--accent);">+</span>';
-      return div.outerHTML;
+        +'<span style="font-size:18px;color:var(--accent);">+</span>'
+        +'</div>';
     }).join('');
   }
 
+  function elegirProductoIdx(idx){
+    var hits = window._buscarHits || [];
+    if(hits[idx]) elegirProducto(hits[idx]);
+  }
   function elegirProductoEnc(el){
     try{ elegirProducto(JSON.parse(decodeURIComponent(el.dataset.prod))); }catch(e){}
   }
@@ -631,6 +637,8 @@
   function agregarProductoCli(prod){ elegirProducto(prod); }
 
   document.addEventListener('click', e=>{
+    // No cerrar si el click fue en el botón de confirmar o en cualquier botón de navegación
+    if(e.target.closest('.btn-nav') || e.target.closest('#btnConfirmar')) return;
     if(!e.target.closest('#inp-buscar') && !e.target.closest('#buscar-dropdown')){
       const dd=document.getElementById('buscar-dropdown'); if(dd) dd.style.display='none';
     }
