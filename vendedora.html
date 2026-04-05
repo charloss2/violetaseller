@@ -798,19 +798,31 @@
       // inputVal: valor en el input | inputQty: data-qty para recalcularTotal
       let inputVal, inputQty, labelUnit, labelQty;
       if(esMixto){
-        // SIEMPRE usar subtotal mixto calculado del catálogo, qty=1
-        // (el guardado de un mixto puede tener qty>1 y precio c/u → duplicaría)
-        inputVal = totalMixto;
-        inputQty = 1;
         labelQty = it.qty > 1 ? `<strong>${it.qty}x</strong> ` : '';
-        labelUnit = ' <span style="font-size:10px;color:#9ca3af;">(subtotal)</span>';
+        if(totalMixto && totalMixto > 0){
+          // Catálogo encontrado: subtotal del catálogo, qty=1
+          inputVal = totalMixto;
+          inputQty = 1;
+          labelUnit = ' <span style="font-size:10px;color:#9ca3af;">(subtotal)</span>';
+        } else if(tieneGuardado){
+          // Sin catálogo pero hay guardado: usar subtotal guardado, qty=1
+          inputVal = it.guardado.subtotal || it.guardado.precio || '';
+          inputQty = 1;
+          labelUnit = ' <span style="font-size:10px;color:#9ca3af;">(subtotal guardado)</span>';
+        } else {
+          // Sin nada: dejar vacío
+          inputVal = '';
+          inputQty = 1;
+          labelUnit = ' <span style="font-size:10px;color:#f59e0b;">⚠️ Ingresá el subtotal</span>';
+        }
       } else if(tieneGuardado){
-        // Precio mixto: poner el subtotal en el input y qty=1 para no duplicar
-        inputVal = totalMixto;
-        inputQty = 1;
-        labelQty = it.qty > 1 ? `<strong>${it.qty}x</strong> ` : '';
-        labelUnit = ' <span style="font-size:10px;color:#9ca3af;">(subtotal)</span>';
+        // Precio normal guardado: precio c/u × qty guardada
+        inputVal = it.guardado.precio || '';
+        inputQty = it.guardado.qty || it.qty || 1;
+        labelQty = (inputQty > 1) ? `<strong>${inputQty}x</strong> ` : '';
+        labelUnit = '';
       } else {
+        // Sin guardado: precio del catálogo × qty del pedido
         inputVal = precio || it.cat?.precio || '';
         inputQty = it.qty;
         labelQty = it.qty > 1 ? `<strong>${it.qty}x</strong> ` : '';
