@@ -502,11 +502,13 @@
     estado.textContent = '⏳ Cargando catálogo...';
     estado.style.color = '#9ca3af';
     try{
-      // Intentar con formato "Campaña 5/26" y también "5/26"
+      // Intentar múltiples formatos: "Campaña 6/26", "06/26", "6/26"
+      const campSinCero = num + '/26';
       let prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campBD) + '&order=nombre.asc');
-      if(!prods.length){
+      if(!prods.length)
         prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campStr) + '&order=nombre.asc');
-      }
+      if(!prods.length)
+        prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campSinCero) + '&order=nombre.asc');
       allProductosCli = prods;
       if(prods.length){
         estado.textContent = '✅ ' + prods.length + ' productos de Campaña ' + campStr;
