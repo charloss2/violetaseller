@@ -779,12 +779,13 @@
     lista.innerHTML = items.map((it, i)=>{
       const {precio, nota, tachado} = promos[i];
 
-      // Si hay precio guardado, usarlo con su qty guardada para no duplicar
+      // Detectar si hay precio guardado
       const tieneGuardado = it.guardado && (it.guardado.precio > 0 || it.guardado.subtotal > 0);
 
-      // Cuando hay guardado: el input muestra precio c/u y qty = qty guardada (1 para mixtos)
-      // Cuando no hay guardado: calcular desde catálogo
-      const esMixto = !tieneGuardado && nota && nota.includes('u a $') && nota.includes('+ ') && it.qty > 1;
+      // Detectar caso mixto (2x50% con mezcla de precios): aplica CON o SIN guardado
+      const esMixtoNota = nota && nota.includes('u a $') && nota.includes('+ ') && it.qty > 1;
+      const esMixto = esMixtoNota; // siempre detectar mixto, incluso con guardado
+
       const totalMixto = esMixto
         ? (() => {
             const precio50 = Math.round((it.cat?.precio||0) * 0.5);
@@ -794,16 +795,16 @@
           })()
         : null;
 
-      // inputVal: valor que va en el input de precio
-      // inputQty: data-qty para que recalcularTotal haga precio * qty correctamente
+      // inputVal: valor en el input | inputQty: data-qty para recalcularTotal
       let inputVal, inputQty, labelUnit, labelQty;
-      if(tieneGuardado){
-        // Usar precio guardado c/u y qty guardada
-        inputVal = it.guardado.precio || '';
-        inputQty = it.guardado.qty || it.qty || 1;
-        labelQty = (inputQty > 1) ? `<strong>${inputQty}x</strong> ` : '';
-        labelUnit = '';
-      } else if(esMixto){
+      if(esMixto){
+        // SIEMPRE usar subtotal mixto calculado del catálogo, qty=1
+        // (el guardado de un mixto puede tener qty>1 y precio c/u → duplicaría)
+        inputVal = totalMixto;
+        inputQty = 1;
+        labelQty = it.qty > 1 ? `<strong>${it.qty}x</strong> ` : '';
+        labelUnit = ' <span style="font-size:10px;color:#9ca3af;">(subtotal)</span>';
+      } else if(tieneGuardado){
         // Precio mixto: poner el subtotal en el input y qty=1 para no duplicar
         inputVal = totalMixto;
         inputQty = 1;
