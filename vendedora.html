@@ -150,6 +150,7 @@
     .add-cbu-btn{background:var(--bg);border:2px dashed var(--border);color:var(--accent);padding:10px;border-radius:10px;width:100%;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
     .add-cbu-btn:hover{border-color:var(--accent);}
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -371,6 +372,8 @@
           <button class="btn-sm outline" onclick="provSelAll(true)">✅ Seleccionar todos</button>
           <button class="btn-sm outline" onclick="provSelAll(false)">⬜ Deseleccionar todos</button>
           <button class="btn-sm primary" onclick="imprimirPedidoProveedor()">🖨️ Imprimir selección</button>
+          <button class="btn-sm success" onclick="exportarExcelVioletta()" style="background:#059669;">📊 Excel consolidado (todos)</button>
+          <button class="btn-sm success" onclick="exportarExcelPorCliente()" style="background:#0d9488;">👤 Excel por cliente</button>
         </div>
       </div>
 
@@ -471,6 +474,11 @@
     if(id==='clientes') renderClientes();
     if(id==='estadisticas') buildStats();
     if(id==='proveedor') buildProveedor();
+    // Mostrar resumen de catálogo cuando se abre tab pedido o catalogo
+    if((id==='pedido'||id==='catalogo') && allProductos.length){
+      const resEl = document.getElementById('cat-resumen-tipos');
+      if(resEl) resEl.innerHTML = buildResumenTipos(allProductos, document.getElementById('campana')?.value||'');
+    }
   }
 
   // ===== DATOS =====
@@ -1053,7 +1061,8 @@
   .footer{margin-top:28px;text-align:center;font-size:11px;color:#9ca3af;border-top:1px solid #e9d5ff;padding-top:14px;}
   .badge-estado{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fef9c3;color:#713f12;}
   @media print{body{padding:16px;}button{display:none!important;}}
-</style></head><body>
+</style>
+</head><body>
 <div class="header">
   <div>
     <div class="logo">♦ Violetta Seller<span>.</span></div>
@@ -1193,7 +1202,8 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   td.bold{font-weight:700;}
   .footer{margin-top:24px;text-align:center;font-size:11px;color:#9ca3af;border-top:1px solid #e9d5ff;padding-top:12px;}
   @media print{button{display:none!important;}}
-</style></head><body>
+</style>
+</head><body>
 <div class="header">
   <div>
     <div class="logo">♦ Violetta Seller<span>.</span></div>
@@ -1412,6 +1422,25 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   // ── Buscador de productos en nuevo pedido (vendedora) ────────────────────────
   let vendPedItems = []; // [{codigo, nombre, precio, qty}]
 
+
+  function buildResumenTipos(prods, campFiltro){
+    const lista = campFiltro ? prods.filter(p=>p.campana===campFiltro) : prods;
+    if(!lista.length) return '';
+    const tipos = {};
+    lista.forEach(p=>{ const t=p.promo_tipo||'normal'; tipos[t]=(tipos[t]||0)+1; });
+    const total = lista.length;
+    const emoji = {lanzamiento:'⚡',oferta_especial:'✨',escala:'🎨','2x50':'🎉',normal:'·'};
+    const chips = Object.entries(tipos).sort((a,b)=>b[1]-a[1]).map(([t,c])=>
+      `<span style="display:inline-flex;align-items:center;gap:4px;background:#f3f4f6;border:1px solid #e5e7eb;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;color:#374151;">
+        ${emoji[t]||'·'} <span style="color:#7c3aed;">${c}</span> ${t.replace('_',' ')}
+      </span>`
+    ).join('');
+    return `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;">
+      <span style="font-size:11px;color:#9ca3af;margin-right:4px;">${total} productos${campFiltro?' · '+campFiltro:''}:</span>
+      ${chips}
+    </div>`;
+  }
+
   function buscarProductoVend(){
     const q = (document.getElementById('buscarProdVend').value || '').trim();
     const res = document.getElementById('vend-buscar-res');
@@ -1452,16 +1481,29 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       return;
     }
 
-    msg.textContent = hits.length + ' resultado' + (hits.length!==1?'s':'') + ' encontrado' + (hits.length!==1?'s':'');
-    msg.style.color = '#9ca3af';
+    // Contar cuántos hay de cada tipo en los resultados totales
+    const tipoCount = {};
+    hits.forEach(p=>{ const t=p.promo_tipo||'normal'; tipoCount[t]=(tipoCount[t]||0)+1; });
+    const tipoResumen = Object.entries(tipoCount).map(([t,c])=>{
+      const emoji = t==='2x50'?'🎉':t==='lanzamiento'?'⚡':t==='oferta_especial'?'✨':t==='escala'?'🎨':'·';
+      return `<span style="font-size:10px;background:#f3f4f6;padding:2px 6px;border-radius:4px;margin-right:4px;">${emoji} ${t}: ${c}</span>`;
+    }).join('');
+    msg.innerHTML = `<span style="color:#9ca3af;">${hits.length} resultado${hits.length!==1?'s':''}</span> ${tipoResumen}`;
+    msg.style.color = '';
     res.style.display = 'block';
     res.innerHTML = hits.slice(0,8).map(p => {
-      const promoLabel = p.promo_tipo && p.promo_tipo!=='normal'
-        ? ' <span style="font-size:10px;color:#059669;font-weight:700;">' + (p.promo_tipo==='2x50'?'🎉 2x50%':p.promo_tipo==='lanzamiento'?'⚡ Lanzamiento':'✨ Oferta') + '</span>' : '';
+      const tipo = p.promo_tipo||'normal';
+      const emoji = tipo==='2x50'?'🎉 2x50%':tipo==='lanzamiento'?'⚡ Lanzamiento':tipo==='oferta_especial'?'✨ Oferta especial':tipo==='escala'?'🎨 Escala':'';
+      const promoLabel = emoji ? ` <span style="font-size:10px;color:#059669;font-weight:700;">${emoji}</span>` : '';
+      const detalle = p.promo_detalle ? `<div style="font-size:10px;color:#7c3aed;margin-top:1px;">ℹ️ ${p.promo_detalle}</div>` : '';
+      const grupo   = p.promo_grupo   ? `<span style="font-size:9px;background:#fce7f3;color:#be185d;padding:1px 5px;border-radius:3px;margin-left:4px;">${p.promo_grupo}</span>` : '';
       return '<div class="vend-res-item" onclick="agregarItemVend(' + JSON.stringify(p).replace(/"/g,"'") + ')">' +
         '<span style="background:#ede9fe;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;min-width:56px;text-align:center;">' + (p.codigo||'—') + '</span>' +
-        '<div style="flex:1;"><div style="font-weight:600;">' + p.nombre + promoLabel + '</div>' +
-        '<div style="font-size:11px;color:var(--accent);font-weight:700;">$' + Number(p.precio).toLocaleString('es-AR') + '</div></div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-weight:600;">' + p.nombre + promoLabel + grupo + '</div>' +
+          '<div style="font-size:11px;color:var(--accent);font-weight:700;">$' + Number(p.precio).toLocaleString('es-AR') + '</div>' +
+          detalle +
+        '</div>' +
         '<span style="color:var(--accent);font-size:18px;">+</span>' +
       '</div>';
     }).join('');
@@ -1864,7 +1906,100 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
       Total: <strong style="color:#7c3aed;">$${totalSel.toLocaleString('es-AR')}</strong>`;
   }
 
-  function imprimirPedidoProveedor(){
+
+  // ── HELPERS EXCEL VIOLETTA ────────────────────────────────────────────────
+
+  // Genera una hoja ItensPedido con SKU / Quantidade / Preço
+  function _buildItensPedido(rows){
+    const wsData = [["SKU","Quantidade"]];
+    rows.forEach(r => {
+      wsData.push([String(r.codigo||r.sku||''), parseInt(r.qty)||1]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // SKU como texto forzado
+    rows.forEach((_, i) => {
+      const cell = ws[XLSX.utils.encode_cell({r:i+1, c:0})];
+      if(cell){ cell.t='s'; cell.z='@'; }
+    });
+    ws['!cols'] = [{wch:14},{wch:12}];
+    return ws;
+  }
+
+  // ── EXPORTAR TODOS (agrupado por SKU) ────────────────────────────────────
+  function exportarExcelVioletta(){
+    if(typeof XLSX === 'undefined'){ toast('❌ Recargá la página (falta XLSX)'); return; }
+    const sel = provRows.filter(r => r.selected);
+    if(!sel.length){ toast('⚠️ No hay productos seleccionados'); return; }
+
+    // Agrupar por SKU, sumar cantidades, tomar precio del primero
+    const agrup = {};
+    sel.forEach(r => {
+      const sku = String(r.codigo || '').trim();
+      if(!sku){ return; }
+      if(!agrup[sku]) agrup[sku] = {codigo:sku, sku, qty:0, precio:r.precio, producto:r.producto};
+      agrup[sku].qty += parseInt(r.qty)||1;
+    });
+
+    const rows = Object.values(agrup);
+    if(!rows.length){ toast('⚠️ Ningún producto tiene código SKU — verificá el catálogo'); return; }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, _buildItensPedido(rows), "ItensPedido");
+
+    const campana = (document.getElementById('provFiltCamp')?.value || 'pedido').replace(/\//g,'-');
+    const fecha   = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    XLSX.writeFile(wb, `pedido_violetta_${campana}_${fecha}.xlsx`);
+
+    const totalUni = rows.reduce((s,r)=>s+r.qty, 0);
+    toast(`✅ Excel descargado — ${rows.length} productos, ${totalUni} unidades`);
+  }
+
+  // ── EXPORTAR POR CLIENTE (un archivo por cliente) ────────────────────────
+  function exportarExcelPorCliente(){
+    if(typeof XLSX === 'undefined'){ toast('❌ Recargá la página (falta XLSX)'); return; }
+    const sel = provRows.filter(r => r.selected);
+    if(!sel.length){ toast('⚠️ No hay productos seleccionados'); return; }
+
+    // Agrupar filas por cliente
+    const porCliente = {};
+    sel.forEach(r => {
+      const key = r.cliente || 'Sin nombre';
+      if(!porCliente[key]) porCliente[key] = [];
+      if(String(r.codigo||'').trim()){
+        porCliente[key].push(r);
+      }
+    });
+
+    const clientes = Object.keys(porCliente);
+    if(!clientes.length){ toast('⚠️ Ningún ítem tiene código SKU'); return; }
+
+    const campana = (document.getElementById('provFiltCamp')?.value || 'pedido').replace(/\//g,'-');
+    const fecha   = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    let descargados = 0;
+
+    clientes.forEach((cliente, i) => {
+      const rows = porCliente[cliente];
+      if(!rows.length) return;
+
+      // Dentro del pedido de un cliente NO agrupamos — cada ítem es una línea
+      setTimeout(() => {
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, _buildItensPedido(rows), "ItensPedido");
+        const nomLimpio = cliente.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ\s]/g,'').trim().replace(/\s+/g,'_');
+        XLSX.writeFile(wb, `pedido_${nomLimpio}_${campana}_${fecha}.xlsx`);
+        descargados++;
+        if(descargados === clientes.length){
+          toast(`✅ ${descargados} archivos descargados (uno por cliente)`);
+        }
+      }, i * 400); // pequeño delay entre descargas para que el browser no las bloquee
+    });
+
+    if(clientes.length > 1){
+      toast(`⏳ Descargando ${clientes.length} archivos...`);
+    }
+  }
+
+      function imprimirPedidoProveedor(){
     const sel = provRows.filter(r=>r.selected);
     if(!sel.length){ toast('⚠️ Seleccioná al menos un ítem'); return; }
 
@@ -1918,7 +2053,8 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
   .kpi .lbl{font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:700;}
   .footer{margin-top:24px;text-align:center;font-size:11px;color:#9ca3af;border-top:1px solid #e9d5ff;padding-top:12px;}
   @media print{button{display:none!important;}}
-</style></head><body>
+</style>
+</head><body>
 <div class="header">
   <div>
     <div class="logo">♦ Violetta Seller<span>.</span></div>

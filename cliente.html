@@ -509,13 +509,24 @@
         prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campStr) + '&order=nombre.asc');
       if(!prods.length)
         prods = await sGet('productos', 'campana=eq.' + encodeURIComponent(campSinCero) + '&order=nombre.asc');
-      allProductosCli = prods;
-      if(prods.length){
+
+      // Si la campaña pedida no tiene productos (ej: C5 cuyos productos pasaron a C6),
+      // buscar en TODAS las campañas para que los productos repetidos igual se encuentren
+      if(!prods.length){
+        const todosProds = await sGet('productos', 'order=nombre.asc&limit=1000');
+        if(todosProds.length){
+          prods = todosProds;
+          allProductosCli = prods;
+          estado.textContent = '⚠️ Campaña ' + campStr + ' sin catálogo propio — mostrando todos los productos disponibles (' + prods.length + ')';
+          estado.style.color = '#d97706';
+        } else {
+          estado.textContent = '⚠️ Sin productos para campaña ' + campStr + ' — verificá el número';
+          estado.style.color = '#d97706';
+        }
+      } else {
+        allProductosCli = prods;
         estado.textContent = '✅ ' + prods.length + ' productos de Campaña ' + campStr;
         estado.style.color = '#059669';
-      } else {
-        estado.textContent = '⚠️ Sin productos para campaña ' + campStr + ' — verificá el número';
-        estado.style.color = '#d97706';
       }
     }catch(e){
       estado.textContent = '❌ Error cargando catálogo';
@@ -550,8 +561,24 @@
       // Código exacto → seleccionar directo
       const exacto = allProductosCli.find(p => p.codigo === q);
       if(exacto){ elegirProducto(exacto); dd.style.display='none'; msg.textContent=''; return; }
-      // Código parcial
+      // Código parcial con coincidencias
       hits = allProductosCli.filter(p => (p.codigo||'').startsWith(q));
+      // Código completo (5-6 dígitos) sin coincidencia → igual agregarlo,
+      // la vendedora completa el nombre después
+      if(!hits.length && q.length >= 5){
+        const prodDesconocido = {
+          codigo: q,
+          nombre: '⏳ Código '+q+' (vendedora completa)',
+          precio: null,
+          precio_tachado: null,
+          promo_tipo: 'normal',
+          promo_grupo: ''
+        };
+        elegirProducto(prodDesconocido);
+        dd.style.display='none';
+        msg.textContent='';
+        return;
+      }
     }
 
     if(!hits.length){
