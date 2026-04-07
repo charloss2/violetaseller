@@ -534,11 +534,13 @@
           </div>
           <span class="badge ${p.estado||'pendiente'}">${bm[p.estado]||'•'} ${p.estado||'pendiente'}</span>
         </div>
-        <div class="pedido-productos">🛍️ ${(p.productos||'Sin productos').split('|').map(pr=>{
+        <div class="pedido-productos">${(p.productos||'Sin productos').split('|').map(pr=>{
           const m=pr.trim().match(/^(\d+)x\s+(.+)$/i);
-          if(m&&parseInt(m[1])>1) return '<span style="background:#7c3aed;color:white;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:3px;">'+m[1]+'x</span>'+m[2].trim();
-          return pr.trim();
-        }).join(' <span style="color:#d1d5db;">|</span> ')}</div>
+          const txt = m&&parseInt(m[1])>1
+            ? '<span style="background:#7c3aed;color:white;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:3px;">'+m[1]+'×</span>'+m[2].trim()
+            : pr.trim();
+          return '<div style="padding:2px 0 2px 8px;border-left:2px solid #e9d5ff;margin:2px 0;font-size:12px;color:#374151;">'+txt+'</div>';
+        }).join('')}</div>
         ${p.nota_interna?`<div class="nota-interna">🔒 ${p.nota_interna}</div>`:''}
         <div class="pedido-details">
           <div class="detail-chip"><div class="label">Teléfono</div><div class="val">${p.telefono||'—'}</div></div>
@@ -875,7 +877,10 @@
           ${labelUnit}${notaStr}
         </div>
         ${catLabel}
-        <span style="font-size:11px;color:#9ca3af;align-self:center;">${esMixto?'$total':'$c/u'}</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <span style="font-size:10px;color:#9ca3af;">${esMixto?'$total':'$c/u'}</span>
+          ${inputQty>1?'<span style="font-size:10px;font-weight:700;color:#7c3aed;background:#ede9fe;padding:0 5px;border-radius:3px;">×'+inputQty+'</span>':''}
+        </div>
         <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
           value="${inputVal}" placeholder="0" min="0"
           oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}">
@@ -1769,9 +1774,11 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     pedElegibles.forEach(p=>{
       let items=[]; try{items=JSON.parse(p.items_precio);}catch(e){}
       items.forEach(it=>{
-        if(!it.nombre||!it.precio) return;
+        if(!it.nombre) return;
+        // Permitir ítems sin precio (código desconocido que vendedora completa)
         if(filtProd && !it.nombre.toLowerCase().includes(filtProd)) return;
         // Buscar código en catálogo si no está en items_precio
+        // Si el ítem ya trae código (incluyendo desconocidos), usarlo directamente
         const codigoProd = it.codigo || (()=>{
           const catMatch = allProductos.find(prod=>
             prod.nombre.toLowerCase()===it.nombre.toLowerCase() ||
@@ -1934,7 +1941,12 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
     // Agrupar por SKU, sumar cantidades, tomar precio del primero
     const agrup = {};
     sel.forEach(r => {
-      const sku = String(r.codigo || '').trim();
+      let sku = String(r.codigo || '').trim();
+      // Extraer código de nombre '⏳ Código 101784 (vendedora completa)'
+      if(!sku) {
+        const m = (r.producto||'').match(/Código\s+(\d{5,6})/);
+        if(m) sku = m[1];
+      }
       if(!sku){ return; }
       if(!agrup[sku]) agrup[sku] = {codigo:sku, sku, qty:0, precio:r.precio, producto:r.producto};
       agrup[sku].qty += parseInt(r.qty)||1;
