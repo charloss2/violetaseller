@@ -615,11 +615,34 @@
     return null;
   }
 
-  // ─── LÓGICA DE PROMOCIONES 2x50% ───────────────────────────────────────────
+  // ─── LÓGICA DE PROMOCIONES ──────────────────────────────────────────────────
   // Recibe el array COMPLETO de ítems del pedido (ya resueltos con cat y qty)
   // Devuelve un array paralelo con {precio, nota, tachado} para cada ítem.
+  // Lee promo_tipo, promo_grupo, precio_promo_2 directamente del catálogo Supabase.
   function aplicarPromos(items){
-    const resultado = items.map(it => {
+
+    // Precio promo de cada grupo bonus (del folleto C6/26)
+    const PRECIO_BONUS = {
+      'sk_pags10_13_bonus':   9999,
+      'ah_promo_bonus':       8999,
+      'frutos_rojos_bonus':   5999,
+      'dermatology_bonus':   19999,
+      'capilar_bonus':        3999,
+      'moda_pags5455_bonus':  3999,
+    };
+
+    // Precio para 2+ unidades por grupo escala (fallback si precio_promo_2 no está en catálogo)
+    const PRECIO2_ESCALA = {
+      'protect_escala':   4999,
+      'mask_escala':      6999,
+      'heladera_escala':  4999,
+      'especiero_escala': 1999,
+      'esmaltes':         3999,
+    };
+
+    const itemsEff = items; // directo desde Supabase, sin override
+
+    const resultado = itemsEff.map(it => {
       if(!it.cat) return {precio: 0, nota: '', tachado: null};
       const precio  = Number(it.cat.precio||0);
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
@@ -633,8 +656,8 @@
         const ahorroStr = tachado ? ` | antes $${tachado.toLocaleString('es-AR')}` : '';
         return {precio, nota:`✨ Oferta especial${ahorroStr}`, tachado};
       }
-      if(promo === 'escala')    return {precio, nota:'', tachado};   // se ajusta abajo
-      if(promo === 'con_compra') return {precio, nota:'', tachado};  // se ajusta abajo
+      if(promo === 'escala')     return {precio, nota:'', tachado};
+      if(promo === 'con_compra') return {precio, nota:'', tachado};
       return {precio, nota: tachado ? `💜 Lista: $${tachado.toLocaleString('es-AR')}` : '', tachado};
     });
 
@@ -649,14 +672,14 @@
       'moda_pags5455_bonus':     3999,   // Portaobjeto para Cartera → $3.999 (normal $6.999)
     };
     const gruposConCompra = {};
-    items.forEach((it, i) => {
+    itemsEff.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
       const pg = it.cat.promo_grupo;
       if(!gruposConCompra[pg]) gruposConCompra[pg] = [];
       gruposConCompra[pg].push(i);
     });
     // Para cada ítem con promo con_compra, armar nota y precio correcto
-    items.forEach((it, i) => {
+    itemsEff.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
       const pg = it.cat.promo_grupo;
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
@@ -666,13 +689,13 @@
       const grupoBase = esBonus ? pg.replace('_bonus','') : pg;
 
       // ¿Hay algún producto "principal" del mismo grupo en el pedido?
-      const hayPrincipal = items.some((it2, j) =>
+      const hayPrincipal = itemsEff.some((it2, j) =>
         j !== i &&
         it2.cat?.promo_grupo === grupoBase &&
         it2.cat?.promo_tipo === 'con_compra'
       );
       // ¿Hay algún bonus del mismo grupo en el pedido?
-      const hayBonus = items.some((it2, j) =>
+      const hayBonus = itemsEff.some((it2, j) =>
         j !== i && it2.cat?.promo_grupo === pg+'_bonus' &&
         it2.cat?.promo_tipo === 'con_compra'
       );
@@ -705,9 +728,9 @@
     });
 
     // ── Esmaltes: 1=$5.999, 2+=$3.999 c/u ──────────────────────────────────
-    const totalEsm = items.reduce((s,it)=>
+    const totalEsm = itemsEff.reduce((s,it)=>
       it.cat?.promo_grupo==='esmaltes' ? s+it.qty : s, 0);
-    items.forEach((it,i)=>{
+    itemsEff.forEach((it,i)=>{
       if(it.cat?.promo_grupo!=='esmaltes') return;
       if(totalEsm >= 2){
         resultado[i] = {precio: it.cat.precio_promo_2||3999,
@@ -717,15 +740,13 @@
       }
     });
 
-    // ── Grupos ESCALA genéricos (promo_tipo=escala, promo_grupo distinto de esmaltes) ──
-    // Tabla de precios para 2+ unidades por grupo (fallback definitivo)
+    // ── Grupos ESCALA genéricos ──────────────────────────────────────────────
     const PRECIO2_ESCALA = {
       'protect_escala':  4999,
       'mask_escala':     6999,
       'heladera_escala': 4999,
       'especiero_escala':1999,
     };
-    // Helper para extraer precio de 2+ del texto
     function extraerPrecio2(pdText, precio1){
       if(!pdText) return null;
       const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
@@ -736,24 +757,23 @@
       return null;
     }
     const gruposEscala = {};
-    items.forEach((it, i) => {
+    itemsEff.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
-      if(it.cat.promo_grupo === 'esmaltes') return; // ya manejado arriba
+      if(it.cat.promo_grupo === 'esmaltes') return;
       const g = it.cat.promo_grupo;
       if(!gruposEscala[g]) gruposEscala[g] = 0;
       gruposEscala[g] += it.qty;
     });
-    items.forEach((it, i) => {
+    itemsEff.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
       if(it.cat.promo_grupo === 'esmaltes') return;
       const g = it.cat.promo_grupo;
       const totalGrupo = gruposEscala[g] || 0;
       const precio1 = Number(it.cat.precio||0);
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      // Usar precio_promo_2 si existe, sino extraer del texto
       let precio2 = it.cat.precio_promo_2 ? Number(it.cat.precio_promo_2) : 0;
       if(!precio2) precio2 = extraerPrecio2(pd, precio1) || 0;
-      if(!precio2) precio2 = PRECIO2_ESCALA[g] || precio1;  // fallback tabla
+      if(!precio2) precio2 = PRECIO2_ESCALA[g] || precio1;
       if(totalGrupo >= 2){
         resultado[i] = {
           precio: precio2,
@@ -770,13 +790,11 @@
     });
 
     // ── Grupos 2x50% ────────────────────────────────────────────────────────
-    // Armar mapa grupo → lista de {idx, precio, qty}
     const grupos = {};
-    items.forEach((it, i)=>{
+    itemsEff.forEach((it, i)=>{
       if(it.cat?.promo_tipo !== '2x50' || !it.cat?.promo_grupo) return;
       const g = it.cat.promo_grupo;
       if(!grupos[g]) grupos[g] = [];
-      // Expandir: si qty=2 del mismo producto, son 2 entradas
       for(let u=0; u<it.qty; u++){
         grupos[g].push({idx:i, precio:it.cat.precio||0, subunit:u, qty:it.qty});
       }
@@ -805,7 +823,7 @@
       }
 
       // Agrupar descuentos por ítem para construir el mensaje y precio
-      items.forEach((it, i)=>{
+      itemsEff.forEach((it, i)=>{
         if(it.cat?.promo_grupo !== grp) return;
 
         const unidsDelItem  = unidades.filter(u=>u.idx===i);
