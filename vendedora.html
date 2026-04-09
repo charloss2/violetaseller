@@ -696,12 +696,16 @@
     });
 
     // ── Grupos ESCALA genéricos (promo_tipo=escala, promo_grupo distinto de esmaltes) ──
-    // En el catálogo: precio = precio para 1 unidad (ej: $5.999)
-    // El precio para 2+ unidades está en el texto de promo_detalle (ej: "a solo $4.999 c/u")
+    // Tabla de precios para 2+ unidades por grupo (fallback definitivo)
+    const PRECIO2_ESCALA = {
+      'protect_escala':  4999,
+      'mask_escala':     6999,
+      'heladera_escala': 4999,
+      'especiero_escala':1999,
+    };
     // Helper para extraer precio de 2+ del texto
     function extraerPrecio2(pdText, precio1){
       if(!pdText) return null;
-      // Busca todos los $ seguidos de número, toma el último que sea menor a precio1
       const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
       for(let k = matches.length-1; k >= 0; k--){
         const num = parseFloat(matches[k][1].replace(/\./g,''));
@@ -722,9 +726,12 @@
       if(it.cat.promo_grupo === 'esmaltes') return;
       const g = it.cat.promo_grupo;
       const totalGrupo = gruposEscala[g] || 0;
-      const precio1 = Number(it.cat.precio||0);                              // precio para 1 unidad
+      const precio1 = Number(it.cat.precio||0);
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      const precio2 = extraerPrecio2(pd, precio1) || precio1;               // precio para 2+
+      // Usar precio_promo_2 si existe, sino extraer del texto
+      let precio2 = it.cat.precio_promo_2 ? Number(it.cat.precio_promo_2) : 0;
+      if(!precio2) precio2 = extraerPrecio2(pd, precio1) || 0;
+      if(!precio2) precio2 = PRECIO2_ESCALA[g] || precio1;  // fallback tabla
       if(totalGrupo >= 2){
         resultado[i] = {
           precio: precio2,
@@ -982,20 +989,39 @@
       }
 
       // ── Para escala: el precio mostrado depende de la qty actual ─────────
-      // En el catálogo: precio = precio vigente para 1 unidad (ej: $5.999)
-      // El precio para 2+ unidades está en el texto de promo_detalle (ej: "a solo $4.999")
+      // Fuentes de precio2 (en orden de prioridad):
+      // 1. Campo precio_promo_2 del catálogo (si ya está en Supabase)
+      // 2. Extracción del texto promo_detalle
+      // 3. Tabla hardcodeada por promo_grupo (garantiza funcionar siempre)
+      const PRECIO2_POR_GRUPO = {
+        'protect_escala':  4999,
+        'mask_escala':     6999,
+        'heladera_escala': 4999,
+        'especiero_escala':1999,
+        'esmaltes':        3999,
+      };
       const esEscala = pt === 'escala' && !esMixto;
       let precio1Escala = 0, precio2Escala = 0;
       if(esEscala){
-        precio1Escala = Number(it.cat?.precio||0);  // precio para 1 unidad
-        // Extraer precio de 2+ del promo_detalle: el último $ menor que precio1
-        const pdText = it.cat?.promo_detalle || it.cat?.promo_desc || '';
-        const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
-        for(let k = matches.length-1; k >= 0; k--){
-          const num = parseFloat(matches[k][1].replace(/\./g,''));
-          if(num > 0 && num < precio1Escala){ precio2Escala = num; break; }
+        precio1Escala = Number(it.cat?.precio||0);
+        // 1. Campo directo
+        if(it.cat?.precio_promo_2 && Number(it.cat.precio_promo_2) > 0){
+          precio2Escala = Number(it.cat.precio_promo_2);
         }
-        if(!precio2Escala) precio2Escala = precio1Escala; // fallback: mismo precio
+        // 2. Texto promo_detalle
+        if(!precio2Escala){
+          const pdText = it.cat?.promo_detalle || it.cat?.promo_desc || '';
+          const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
+          for(let k = matches.length-1; k >= 0; k--){
+            const num = parseFloat(matches[k][1].replace(/\./g,''));
+            if(num > 0 && num < precio1Escala){ precio2Escala = num; break; }
+          }
+        }
+        // 3. Tabla por grupo (fallback definitivo)
+        if(!precio2Escala && pg && PRECIO2_POR_GRUPO[pg]){
+          precio2Escala = PRECIO2_POR_GRUPO[pg];
+        }
+        if(!precio2Escala) precio2Escala = precio1Escala;
       }
       // Si escala y no guardado, corregir inputVal según qty real
       if(esEscala && !tieneGuardado){
