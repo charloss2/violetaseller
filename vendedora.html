@@ -1112,27 +1112,20 @@
         promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">⚡ OFERTA</span>`;
       }
 
-      // ── Para escala: el precio mostrado depende de la qty actual ─────────
-      // Fuentes de precio2 (en orden de prioridad):
-      // 1. Campo precio_promo_2 del catálogo (si ya está en Supabase)
-      // 2. Extracción del texto promo_detalle
-      // 3. Tabla hardcodeada por promo_grupo (garantiza funcionar siempre)
-      const PRECIO2_POR_GRUPO = {
-        'protect_escala':  4999,
-        'mask_escala':     6999,
-        'heladera_escala': 4999,
-        'especiero_escala':1999,
-        'esmaltes':        3999,
-      };
+      // ── Para escala: usar el precio que calculó aplicarPromos (tiene visión del grupo completo)
+      // No usar inputQty para decidir precio1 vs precio2 — aplicarPromos ya sumó todos los ítems
       const esEscala = pt === 'escala' && !esMixto;
       let precio1Escala = 0, precio2Escala = 0;
       if(esEscala){
         precio1Escala = Number(it.cat?.precio||0);
-        // 1. Campo directo
+        // precio2 desde campo directo, texto o tabla
+        const PRECIO2_POR_GRUPO = {
+          'protect_escala':  4999, 'mask_escala': 6999,
+          'heladera_escala': 4999, 'especiero_escala': 1999, 'esmaltes': 3999,
+        };
         if(it.cat?.precio_promo_2 && Number(it.cat.precio_promo_2) > 0){
           precio2Escala = Number(it.cat.precio_promo_2);
         }
-        // 2. Texto promo_detalle
         if(!precio2Escala){
           const pdText = it.cat?.promo_detalle || it.cat?.promo_desc || '';
           const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
@@ -1141,15 +1134,13 @@
             if(num > 0 && num < precio1Escala){ precio2Escala = num; break; }
           }
         }
-        // 3. Tabla por grupo (fallback definitivo)
-        if(!precio2Escala && pg && PRECIO2_POR_GRUPO[pg]){
-          precio2Escala = PRECIO2_POR_GRUPO[pg];
-        }
+        if(!precio2Escala && pg && PRECIO2_POR_GRUPO[pg]) precio2Escala = PRECIO2_POR_GRUPO[pg];
         if(!precio2Escala) precio2Escala = precio1Escala;
       }
-      // Si escala y no guardado, corregir inputVal según qty real
+      // Si escala y no guardado: usar DIRECTAMENTE el precio que calculó aplicarPromos
+      // (que ya tiene visión del total de unidades del grupo en el pedido completo)
       if(esEscala && !tieneGuardado){
-        inputVal = inputQty >= 2 ? precio2Escala : precio1Escala;
+        inputVal = precio; // precio = promos[i].precio, calculado por aplicarPromos con el grupo completo
       }
 
       // ── Precio final = inputVal × inputQty ────────────────────────────────
