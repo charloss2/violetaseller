@@ -696,11 +696,19 @@
     });
 
     // ── Grupos ESCALA genéricos (promo_tipo=escala, promo_grupo distinto de esmaltes) ──
-    // Leer precio y cantidades del promo_detalle no es fácil, pero podemos usar
-    // la lógica: si hay 2+ unidades totales del mismo grupo escala → precio menor.
-    // Los precios de escala están en el promo_detalle como texto, y en precio_tachado.
-    // Simplificación: si qty del grupo >= 2 → precio = precio del catálogo (ya es el precio 2+)
-    // Si qty = 1 → precio = precio_tachado (precio de unidad sola) si está disponible.
+    // En el catálogo: precio = precio para 1 unidad (ej: $5.999)
+    // El precio para 2+ unidades está en el texto de promo_detalle (ej: "a solo $4.999 c/u")
+    // Helper para extraer precio de 2+ del texto
+    function extraerPrecio2(pdText, precio1){
+      if(!pdText) return null;
+      // Busca todos los $ seguidos de número, toma el último que sea menor a precio1
+      const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
+      for(let k = matches.length-1; k >= 0; k--){
+        const num = parseFloat(matches[k][1].replace(/\./g,''));
+        if(num > 0 && num < precio1) return num;
+      }
+      return null;
+    }
     const gruposEscala = {};
     items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
@@ -713,20 +721,20 @@
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
       if(it.cat.promo_grupo === 'esmaltes') return;
       const g = it.cat.promo_grupo;
-      const total = gruposEscala[g] || 0;
-      const precio2 = Number(it.cat.precio||0);
-      const precio1 = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : precio2;
+      const totalGrupo = gruposEscala[g] || 0;
+      const precio1 = Number(it.cat.precio||0);                              // precio para 1 unidad
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      if(total >= 2){
+      const precio2 = extraerPrecio2(pd, precio1) || precio1;               // precio para 2+
+      if(totalGrupo >= 2){
         resultado[i] = {
           precio: precio2,
-          nota: `📊 Promo escala (${total} en pedido): $${precio2.toLocaleString('es-AR')} c/u. ${pd}`,
+          nota: `📊 Promo escala (${totalGrupo} en pedido): $${precio2.toLocaleString('es-AR')} c/u ✅`,
           tachado: precio1 !== precio2 ? precio1 : null
         };
       } else {
         resultado[i] = {
-          precio: precio1 !== precio2 ? precio1 : precio2,
-          nota: `📊 1 unidad: $${(precio1!==precio2?precio1:precio2).toLocaleString('es-AR')} | ${pd}`,
+          precio: precio1,
+          nota: `📊 1 unidad: $${precio1.toLocaleString('es-AR')} | Con 2+: $${precio2.toLocaleString('es-AR')} c/u`,
           tachado: null
         };
       }
@@ -974,12 +982,21 @@
       }
 
       // ── Para escala: el precio mostrado depende de la qty actual ─────────
-      // precio (de aplicarPromos) ya es el correcto para la qty actual del pedido,
-      // pero si el usuario cambia la qty desde el panel necesitamos recalcular.
-      // Guardamos el precio-1 y precio-2+ en data attributes para el recálculo.
+      // En el catálogo: precio = precio vigente para 1 unidad (ej: $5.999)
+      // El precio para 2+ unidades está en el texto de promo_detalle (ej: "a solo $4.999")
       const esEscala = pt === 'escala' && !esMixto;
-      const precio1Escala = esEscala ? (it.cat?.precio_tachado ? Number(it.cat.precio_tachado) : Number(it.cat?.precio||0)) : 0;
-      const precio2Escala = esEscala ? Number(it.cat?.precio||0) : 0;
+      let precio1Escala = 0, precio2Escala = 0;
+      if(esEscala){
+        precio1Escala = Number(it.cat?.precio||0);  // precio para 1 unidad
+        // Extraer precio de 2+ del promo_detalle: el último $ menor que precio1
+        const pdText = it.cat?.promo_detalle || it.cat?.promo_desc || '';
+        const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
+        for(let k = matches.length-1; k >= 0; k--){
+          const num = parseFloat(matches[k][1].replace(/\./g,''));
+          if(num > 0 && num < precio1Escala){ precio2Escala = num; break; }
+        }
+        if(!precio2Escala) precio2Escala = precio1Escala; // fallback: mismo precio
+      }
       // Si escala y no guardado, corregir inputVal según qty real
       if(esEscala && !tieneGuardado){
         inputVal = inputQty >= 2 ? precio2Escala : precio1Escala;
