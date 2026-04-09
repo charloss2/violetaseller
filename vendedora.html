@@ -639,8 +639,15 @@
     });
 
     // ── CON COMPRA: detectar si hay producto "principal" + "bonus" en el mismo pedido ──
-    // Grupos: grupo "X" y "X_bonus" → si hay algún principal del grupo en el pedido,
-    // el bonus se muestra al precio promo.
+    // Precio promo del bonus por grupo (hardcodeado del folleto, ya que Supabase puede no tenerlo)
+    const PRECIO_BONUS = {
+      'sk_pags10_13_bonus':      9999,   // Crema Total Skin → $9.999 (normal $19.999)
+      'ah_promo_bonus':          8999,   // Crema para Manos AH+ → $8.999 (normal $14.999)
+      'frutos_rojos_bonus':      5999,   // Crema Hidratante Frutos Rojos → $5.999 (normal $9.999)
+      'dermatology_bonus':      19999,   // Tratamiento Dual → $19.999 (normal $24.999)
+      'capilar_bonus':           3999,   // Ampolla Hydra Expert → $3.999 (normal $4.999)
+      'moda_pags5455_bonus':     3999,   // Portaobjeto para Cartera → $3.999 (normal $6.999)
+    };
     const gruposConCompra = {};
     items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
@@ -648,36 +655,51 @@
       if(!gruposConCompra[pg]) gruposConCompra[pg] = [];
       gruposConCompra[pg].push(i);
     });
-    // Para cada ítem con promo con_compra, armar nota explicativa
+    // Para cada ítem con promo con_compra, armar nota y precio correcto
     items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
       const pg = it.cat.promo_grupo;
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      const precio = Number(it.cat.precio||0);
+      const precioNormal = Number(it.cat.precio||0);
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
       const esBonus = pg.endsWith('_bonus');
       const grupoBase = esBonus ? pg.replace('_bonus','') : pg;
+
+      // ¿Hay algún producto "principal" del mismo grupo en el pedido?
       const hayPrincipal = items.some((it2, j) =>
         j !== i &&
         it2.cat?.promo_grupo === grupoBase &&
         it2.cat?.promo_tipo === 'con_compra'
       );
+      // ¿Hay algún bonus del mismo grupo en el pedido?
+      const hayBonus = items.some((it2, j) =>
+        j !== i && it2.cat?.promo_grupo === pg+'_bonus' &&
+        it2.cat?.promo_tipo === 'con_compra'
+      );
+
       if(esBonus){
+        const precioPromo = PRECIO_BONUS[pg] || precioNormal;
         if(hayPrincipal){
-          resultado[i] = {precio, nota:`🎁 ¡PROMO ACTIVA! Precio especial por compra del grupo`, tachado};
+          // ✅ PROMO ACTIVA: aplicar precio especial al bonus
+          resultado[i] = {
+            precio: precioPromo,
+            nota: `🎁 ¡PROMO ACTIVA! Precio especial: $${precioPromo.toLocaleString('es-AR')} (normal: $${precioNormal.toLocaleString('es-AR')})`,
+            tachado: precioNormal
+          };
         } else {
-          const nota2 = pd || `Comprá un producto del grupo "${grupoBase}" para obtener este precio`;
-          resultado[i] = {precio, nota:`ℹ️ Precio promo si agregás otro producto del grupo`, tachado};
+          // Sin producto principal en el pedido: mostrar precio normal con aviso
+          resultado[i] = {
+            precio: precioNormal,
+            nota: `ℹ️ Agregar un producto ${grupoBase.replace(/_/g,' ')} para obtenerlo a $${precioPromo.toLocaleString('es-AR')}`,
+            tachado: null
+          };
         }
       } else {
-        // Producto principal: indicar que al agregarlo, el bonus baja de precio
-        const hayBonus = items.some((it2, j) =>
-          j !== i && it2.cat?.promo_grupo === pg+'_bonus'
-        );
+        // Producto principal: precio normal, informar si el bonus está en el pedido
         if(hayBonus){
-          resultado[i] = {precio, nota:`🎁 ¡Promo con_compra activa! El producto bonus ya está en el pedido`, tachado};
+          resultado[i] = {precio: precioNormal, nota:`🎁 ¡El bonus ya está en el pedido con precio especial!`, tachado};
         } else {
-          resultado[i] = {precio, nota:`🎁 Con este producto, podés agregar el bonus a precio especial`, tachado};
+          resultado[i] = {precio: precioNormal, nota:`🎁 Con este producto podés agregar el bonus a precio especial`, tachado};
         }
       }
     });
