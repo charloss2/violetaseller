@@ -625,10 +625,61 @@
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
       const promo   = it.cat.promo_tipo || 'normal';
 
-      if(promo === 'lanzamiento')    return {precio, nota:'⚡ Precio de lanzamiento', tachado};
-      if(promo === 'oferta_especial')return {precio, nota:'✨ Oferta especial', tachado};
-      if(promo === 'escala')         return {precio, nota:'', tachado};   // se ajusta abajo
+      if(promo === 'lanzamiento'){
+        const ahorroStr = tachado ? ` (antes $${tachado.toLocaleString('es-AR')})` : '';
+        return {precio, nota:`⚡ Precio de lanzamiento${ahorroStr}`, tachado};
+      }
+      if(promo === 'oferta_especial'){
+        const ahorroStr = tachado ? ` | antes $${tachado.toLocaleString('es-AR')}` : '';
+        return {precio, nota:`✨ Oferta especial${ahorroStr}`, tachado};
+      }
+      if(promo === 'escala')    return {precio, nota:'', tachado};   // se ajusta abajo
+      if(promo === 'con_compra') return {precio, nota:'', tachado};  // se ajusta abajo
       return {precio, nota: tachado ? `💜 Lista: $${tachado.toLocaleString('es-AR')}` : '', tachado};
+    });
+
+    // ── CON COMPRA: detectar si hay producto "principal" + "bonus" en el mismo pedido ──
+    // Grupos: grupo "X" y "X_bonus" → si hay algún principal del grupo en el pedido,
+    // el bonus se muestra al precio promo.
+    const gruposConCompra = {};
+    items.forEach((it, i) => {
+      if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
+      const pg = it.cat.promo_grupo;
+      if(!gruposConCompra[pg]) gruposConCompra[pg] = [];
+      gruposConCompra[pg].push(i);
+    });
+    // Para cada ítem con promo con_compra, armar nota explicativa
+    items.forEach((it, i) => {
+      if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
+      const pg = it.cat.promo_grupo;
+      const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
+      const precio = Number(it.cat.precio||0);
+      const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
+      const esBonus = pg.endsWith('_bonus');
+      const grupoBase = esBonus ? pg.replace('_bonus','') : pg;
+      const hayPrincipal = items.some((it2, j) =>
+        j !== i &&
+        it2.cat?.promo_grupo === grupoBase &&
+        it2.cat?.promo_tipo === 'con_compra'
+      );
+      if(esBonus){
+        if(hayPrincipal){
+          resultado[i] = {precio, nota:`🎁 ¡PROMO ACTIVA! Precio especial por compra del grupo`, tachado};
+        } else {
+          const nota2 = pd || `Comprá un producto del grupo "${grupoBase}" para obtener este precio`;
+          resultado[i] = {precio, nota:`ℹ️ Precio promo si agregás otro producto del grupo`, tachado};
+        }
+      } else {
+        // Producto principal: indicar que al agregarlo, el bonus baja de precio
+        const hayBonus = items.some((it2, j) =>
+          j !== i && it2.cat?.promo_grupo === pg+'_bonus'
+        );
+        if(hayBonus){
+          resultado[i] = {precio, nota:`🎁 ¡Promo con_compra activa! El producto bonus ya está en el pedido`, tachado};
+        } else {
+          resultado[i] = {precio, nota:`🎁 Con este producto, podés agregar el bonus a precio especial`, tachado};
+        }
+      }
     });
 
     // ── Esmaltes: 1=$5.999, 2+=$3.999 c/u ──────────────────────────────────
@@ -641,6 +692,43 @@
                         nota:  '🏷️ 2+ esmaltes: $3.999 c/u', tachado:5999};
       } else {
         resultado[i] = {precio:5999, nota:'1 esmalte: $5.999 | 2+ a $3.999', tachado:null};
+      }
+    });
+
+    // ── Grupos ESCALA genéricos (promo_tipo=escala, promo_grupo distinto de esmaltes) ──
+    // Leer precio y cantidades del promo_detalle no es fácil, pero podemos usar
+    // la lógica: si hay 2+ unidades totales del mismo grupo escala → precio menor.
+    // Los precios de escala están en el promo_detalle como texto, y en precio_tachado.
+    // Simplificación: si qty del grupo >= 2 → precio = precio del catálogo (ya es el precio 2+)
+    // Si qty = 1 → precio = precio_tachado (precio de unidad sola) si está disponible.
+    const gruposEscala = {};
+    items.forEach((it, i) => {
+      if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
+      if(it.cat.promo_grupo === 'esmaltes') return; // ya manejado arriba
+      const g = it.cat.promo_grupo;
+      if(!gruposEscala[g]) gruposEscala[g] = 0;
+      gruposEscala[g] += it.qty;
+    });
+    items.forEach((it, i) => {
+      if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
+      if(it.cat.promo_grupo === 'esmaltes') return;
+      const g = it.cat.promo_grupo;
+      const total = gruposEscala[g] || 0;
+      const precio2 = Number(it.cat.precio||0);
+      const precio1 = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : precio2;
+      const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
+      if(total >= 2){
+        resultado[i] = {
+          precio: precio2,
+          nota: `📊 Promo escala (${total} en pedido): $${precio2.toLocaleString('es-AR')} c/u. ${pd}`,
+          tachado: precio1 !== precio2 ? precio1 : null
+        };
+      } else {
+        resultado[i] = {
+          precio: precio1 !== precio2 ? precio1 : precio2,
+          nota: `📊 1 unidad: $${(precio1!==precio2?precio1:precio2).toLocaleString('es-AR')} | ${pd}`,
+          tachado: null
+        };
       }
     });
 
@@ -861,6 +949,39 @@
 
       // Código guardado o del catálogo
       const codigoVal = it.guardado?.codigo || it.cat?.codigo || '';
+
+      // ── Etiqueta de oferta según promo_tipo del catálogo ─────────────────────
+      let promoTag = '';
+      const pt = it.cat?.promo_tipo || '';
+      const pd = it.cat?.promo_detalle || it.cat?.promo_desc || '';
+      const pg = it.cat?.promo_grupo || '';
+      if(pt === 'lanzamiento'){
+        promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef3c7;color:#b45309;border:1px solid #fcd34d;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">🚀 LANZAMIENTO</span>`;
+      } else if(pt === 'escala'){
+        promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;" title="${pd}">📊 ESCALA</span>`;
+      } else if(pt === 'con_compra'){
+        // Distinguir si es el producto "principal" o el "bonus"
+        const esBonus = pg.includes('_bonus') || pg.includes('bonus');
+        if(esBonus){
+          promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#ede9fe;color:#7c3aed;border:1px solid #c4b5fd;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;" title="${pd}">🎁 PRECIO PROMO</span>`;
+        } else {
+          promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;" title="${pd}">🎁 CON COMPRA</span>`;
+        }
+      } else if(pt === '2x50'){
+        promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fce7f3;color:#9d174d;border:1px solid #f9a8d4;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">🎉 2x50%</span>`;
+      } else if(pt === 'oferta_especial'){
+        promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">⚡ OFERTA</span>`;
+      }
+
+      // ── Precio final = inputVal × inputQty ────────────────────────────────
+      const precioFinalVal = (parseFloat(inputVal)||0) * inputQty;
+      const precioFinalStr = precioFinalVal > 0
+        ? '$' + precioFinalVal.toLocaleString('es-AR')
+        : '—';
+
+      // ── Precio unitario label ──────────────────────────────────────────────
+      const precioUnitLabel = esMixto ? 'SUBTOTAL' : (inputQty > 1 ? `$c/u ×${inputQty}` : '$c/u');
+
       return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;">
         <div style="flex:1;min-width:180px;">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
@@ -874,16 +995,24 @@
               onchange="actualizarNombreItem('${pedidoId}',${i},this.value)"
               data-original="${it.nombre}">
           </div>
+          ${promoTag ? '<div>'+promoTag+'</div>' : ''}
           ${labelUnit}${notaStr}
+          ${pd && pt === 'con_compra' ? `<div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.3;">ℹ️ ${pd}</div>` : ''}
         </div>
         ${catLabel}
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <span style="font-size:10px;color:#9ca3af;">${esMixto?'$total':'$c/u'}</span>
-          ${inputQty>1?'<span style="font-size:10px;font-weight:700;color:#7c3aed;background:#ede9fe;padding:0 5px;border-radius:3px;">×'+inputQty+'</span>':''}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+            <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">${precioUnitLabel}</span>
+            <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
+              value="${inputVal}" placeholder="0" min="0"
+              oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}"
+              style="width:88px;">
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:3px 8px;min-width:88px;">
+            <span style="font-size:9px;color:#16a34a;font-weight:700;text-transform:uppercase;">PRECIO FINAL</span>
+            <span class="item-precio-final" id="pf_${pedidoId}_${i}" style="font-size:13px;font-weight:800;color:#15803d;">${precioFinalStr}</span>
+          </div>
         </div>
-        <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
-          value="${inputVal}" placeholder="0" min="0"
-          oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}">
       </div>`;
     }).join('');
 
@@ -921,7 +1050,14 @@
     inputs.forEach(inp=>{
       const precio=parseFloat(inp.value)||0;
       const qty=parseInt(inp.dataset.qty)||1;
-      total+=precio*qty;
+      const subtotal=precio*qty;
+      total+=subtotal;
+      // Actualizar el precio final individual
+      const idxMatch = inp.id.match(/_(\d+)$/);
+      if(idxMatch){
+        const pfSpan = document.getElementById('pf_'+pedidoId+'_'+idxMatch[1]);
+        if(pfSpan) pfSpan.textContent = subtotal > 0 ? '$'+subtotal.toLocaleString('es-AR') : '—';
+      }
     });
     document.getElementById('total-display-'+pedidoId).textContent='$'+total.toLocaleString('es-AR');
   }
