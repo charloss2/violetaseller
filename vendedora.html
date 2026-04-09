@@ -430,17 +430,21 @@
 
   // ===== AUTH =====
   async function doLogin(){
-    const u=document.getElementById('loginUser').value.trim().toLowerCase();
+    const u=document.getElementById('loginUser').value.trim();
     const p=document.getElementById('loginPass').value;
+    if(!u||!p){showErr();return;}
     try{
-      const rows=await sGet('vendedoras',`username=eq.${u}&activa=eq.true`);
-      if(!rows.length){showErr();return;}
-      const v=rows[0];
+      // Traer todas las vendedoras activas y comparar en JS (evita problemas de case en Supabase)
+      const rows=await sGet('vendedoras','activa=eq.true&select=*');
+      const v = rows.find(r => (r.username||'').toLowerCase() === u.toLowerCase());
+      if(!v){showErr();return;}
       if(v.password_hash!==btoa(p)){showErr();return;}
       setLoggedIn(v);
     }catch(e){
-      if(u==='ruths'&&p==='Solvio.836') setLoggedIn({id:'1',nombre:'Ruth',username:'Ruths',activa:true,cbus:'[]'});
-      else showErr();
+      console.error('Login error:',e.message||e);
+      // Fallback offline para usuario de prueba
+      if(u.toLowerCase()==='ruths'&&p==='Solvio.836') setLoggedIn({id:'1',nombre:'Ruth',username:'Ruths',activa:true,cbus:'[]'});
+      else{ showErr(); toast('⚠️ Error de conexión. Verificá tu internet.'); }
     }
   }
 
