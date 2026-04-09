@@ -620,31 +620,9 @@
   }
 
   // ─── LÓGICA DE PROMOCIONES ──────────────────────────────────────────────────
-  // Recibe el array COMPLETO de ítems del pedido (ya resueltos con cat y qty)
-  // Devuelve un array paralelo con {precio, nota, tachado} para cada ítem.
-  // Lee promo_tipo, promo_grupo, precio_promo_2 directamente del catálogo Supabase.
   function aplicarPromos(items){
 
-    // Precio promo de cada grupo bonus (del folleto C6/26)
-    const PRECIO_BONUS = {
-      'sk_pags10_13_bonus':   9999,
-      'ah_promo_bonus':       8999,
-      'frutos_rojos_bonus':   5999,
-      'dermatology_bonus':   19999,
-      'capilar_bonus':        3999,
-      'moda_pags5455_bonus':  3999,
-    };
-
-    // Precio para 2+ unidades por grupo escala (fallback si precio_promo_2 no está en catálogo)
-    const PRECIO2_ESCALA = {
-      'protect_escala':   4999,
-      'mask_escala':      6999,
-      'heladera_escala':  4999,
-      'especiero_escala': 1999,
-      'esmaltes':         3999,
-    };
-
-    const itemsEff = items; // directo desde Supabase, sin override
+    const itemsEff = items;
 
     const resultado = itemsEff.map(it => {
       if(!it.cat) return {precio: 0, nota: '', tachado: null};
