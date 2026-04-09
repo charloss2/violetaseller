@@ -973,6 +973,18 @@
         promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">⚡ OFERTA</span>`;
       }
 
+      // ── Para escala: el precio mostrado depende de la qty actual ─────────
+      // precio (de aplicarPromos) ya es el correcto para la qty actual del pedido,
+      // pero si el usuario cambia la qty desde el panel necesitamos recalcular.
+      // Guardamos el precio-1 y precio-2+ en data attributes para el recálculo.
+      const esEscala = pt === 'escala' && !esMixto;
+      const precio1Escala = esEscala ? (it.cat?.precio_tachado ? Number(it.cat.precio_tachado) : Number(it.cat?.precio||0)) : 0;
+      const precio2Escala = esEscala ? Number(it.cat?.precio||0) : 0;
+      // Si escala y no guardado, corregir inputVal según qty real
+      if(esEscala && !tieneGuardado){
+        inputVal = inputQty >= 2 ? precio2Escala : precio1Escala;
+      }
+
       // ── Precio final = inputVal × inputQty ────────────────────────────────
       const precioFinalVal = (parseFloat(inputVal)||0) * inputQty;
       const precioFinalStr = precioFinalVal > 0
@@ -980,9 +992,9 @@
         : '—';
 
       // ── Precio unitario label ──────────────────────────────────────────────
-      const precioUnitLabel = esMixto ? 'SUBTOTAL' : (inputQty > 1 ? `$c/u ×${inputQty}` : '$c/u');
+      const precioUnitLabel = esMixto ? 'SUBTOTAL' : '$c/u';
 
-      return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;">
+      return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;align-items:flex-start;">
         <div style="flex:1;min-width:180px;">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
             <input type="text" class="item-codigo-input" id="ic_${pedidoId}_${i}"
@@ -995,22 +1007,35 @@
               onchange="actualizarNombreItem('${pedidoId}',${i},this.value)"
               data-original="${it.nombre}">
           </div>
-          ${promoTag ? '<div>'+promoTag+'</div>' : ''}
+          ${promoTag ? '<div style="margin-bottom:2px;">'+promoTag+'</div>' : ''}
           ${labelUnit}${notaStr}
           ${pd && pt === 'con_compra' ? `<div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.3;">ℹ️ ${pd}</div>` : ''}
         </div>
         ${catLabel}
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-            <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">${precioUnitLabel}</span>
-            <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
-              value="${inputVal}" placeholder="0" min="0"
-              oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}"
-              style="width:88px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:200px;">
+          <div style="display:flex;align-items:flex-end;gap:6px;">
+            ${!esMixto ? `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+              <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">CANTIDAD</span>
+              <input type="number" class="item-qty-input" id="iq_${pedidoId}_${i}"
+                value="${inputQty}" min="1" max="99"
+                oninput="cambiarQty('${pedidoId}',${i},this.value)"
+                data-precio1="${precio1Escala}" data-precio2="${precio2Escala}"
+                data-esescala="${esEscala?'1':'0'}"
+                data-promogrupo="${pg}"
+                style="width:52px;text-align:center;border:1px solid #d1d5db;border-radius:6px;padding:4px 4px;font-size:13px;font-family:inherit;font-weight:700;color:#374151;">
+            </div>` : ''}
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+              <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">${precioUnitLabel}</span>
+              <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
+                value="${inputVal}" placeholder="0" min="0"
+                oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}"
+                style="width:88px;border:1px solid #e9d5ff;border-radius:6px;padding:4px 6px;font-size:13px;font-family:inherit;text-align:right;">
+            </div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:3px 8px;min-width:88px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:4px 10px;width:100%;box-sizing:border-box;">
             <span style="font-size:9px;color:#16a34a;font-weight:700;text-transform:uppercase;">PRECIO FINAL</span>
-            <span class="item-precio-final" id="pf_${pedidoId}_${i}" style="font-size:13px;font-weight:800;color:#15803d;">${precioFinalStr}</span>
+            <span class="item-precio-final" id="pf_${pedidoId}_${i}" style="font-size:15px;font-weight:800;color:#15803d;">${precioFinalStr}</span>
           </div>
         </div>
       </div>`;
@@ -1044,16 +1069,63 @@
     }
   }
 
+  // Cuando la vendedora cambia la cantidad en el panel de precios
+  function cambiarQty(pedidoId, idx, nuevaQtyStr){
+    const newQty = Math.max(1, parseInt(nuevaQtyStr)||1);
+    const precioInp = document.getElementById('ip_'+pedidoId+'_'+idx);
+    const qtyInp    = document.getElementById('iq_'+pedidoId+'_'+idx);
+    if(!precioInp || !qtyInp) return;
+
+    // Actualizar data-qty en el input de precio
+    precioInp.dataset.qty = newQty;
+
+    // Si es producto de escala genérica: recalcular precio c/u según nueva qty total del grupo
+    const esEscala  = qtyInp.dataset.esescala === '1';
+    const promoGrpo = qtyInp.dataset.promogrupo || '';
+    if(esEscala && promoGrpo){
+      // Sumar qtys de todos los ítems del mismo grupo escala en el panel
+      let totalGrp = 0;
+      document.querySelectorAll(`[id^="iq_${pedidoId}_"]`).forEach(inp=>{
+        if(inp.dataset.promogrupo === promoGrpo && inp.dataset.esescala === '1'){
+          totalGrp += Math.max(1, parseInt(inp.value)||1);
+        }
+      });
+      const precio1 = parseFloat(qtyInp.dataset.precio1)||0;
+      const precio2 = parseFloat(qtyInp.dataset.precio2)||0;
+      const precioAplicar = totalGrp >= 2 ? precio2 : precio1;
+      // Actualizar precio c/u en todos los ítems del grupo
+      document.querySelectorAll(`[id^="iq_${pedidoId}_"]`).forEach(inp=>{
+        if(inp.dataset.promogrupo === promoGrpo && inp.dataset.esescala === '1'){
+          const idxOtro = inp.id.match(/_(\d+)$/)?.[1];
+          const precioOtro = document.getElementById('ip_'+pedidoId+'_'+idxOtro);
+          if(precioOtro) precioOtro.value = precioAplicar;
+        }
+      });
+      // Actualizar nota visual para el item actual
+      const notaEl = document.querySelector(`#irow_${pedidoId}_${idx} .item-promo-nota`);
+      if(notaEl){
+        notaEl.textContent = totalGrp >= 2
+          ? `📊 Promo escala (${totalGrp} en pedido): $${precio2.toLocaleString('es-AR')} c/u`
+          : `📊 1 unidad: $${precio1.toLocaleString('es-AR')} | Con 2+: $${precio2.toLocaleString('es-AR')} c/u`;
+      }
+    }
+
+    recalcularTotal(pedidoId);
+  }
+
   function recalcularTotal(pedidoId){
     const inputs=document.querySelectorAll(`[id^="ip_${pedidoId}_"]`);
     let total=0;
     inputs.forEach(inp=>{
       const precio=parseFloat(inp.value)||0;
-      const qty=parseInt(inp.dataset.qty)||1;
+      // Leer qty del input de cantidad si existe, sino del data-qty
+      const idxMatch = inp.id.match(/_(\d+)$/);
+      const qtyInp = idxMatch ? document.getElementById('iq_'+pedidoId+'_'+idxMatch[1]) : null;
+      const qty = qtyInp ? (Math.max(1,parseInt(qtyInp.value)||1)) : (parseInt(inp.dataset.qty)||1);
+      inp.dataset.qty = qty; // mantener sincronizado
       const subtotal=precio*qty;
       total+=subtotal;
       // Actualizar el precio final individual
-      const idxMatch = inp.id.match(/_(\d+)$/);
       if(idxMatch){
         const pfSpan = document.getElementById('pf_'+pedidoId+'_'+idxMatch[1]);
         if(pfSpan) pfSpan.textContent = subtotal > 0 ? '$'+subtotal.toLocaleString('es-AR') : '—';
@@ -1068,11 +1140,13 @@
     const detalleItems=[];
     inputs.forEach(inp=>{
       const precio=parseFloat(inp.value)||0;
-      const qty=parseInt(inp.dataset.qty)||1;
+      // Leer qty del input de cantidad si existe, sino del data-qty
+      const idxMatch = inp.id.match(/_(\d+)$/);
+      const qtyInp = idxMatch ? document.getElementById('iq_'+pedidoId+'_'+idxMatch[1]) : null;
+      const qty = qtyInp ? (Math.max(1,parseInt(qtyInp.value)||1)) : (parseInt(inp.dataset.qty)||1);
       total+=precio*qty;
       // Construir detalle con precio por ítem
       const row=inp.closest('.item-precio-row');
-      // Leer nombre del input editable si existe, sino del span
       const nombreInp = row.querySelector('.item-nombre-input');
       const nombre = nombreInp ? nombreInp.value.trim() : (row.querySelector('.item-nombre')?.textContent.trim()||'');
       const codigoInp = row.querySelector('.item-codigo-input');
