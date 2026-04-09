@@ -764,18 +764,24 @@
       const precioNormal = Number(it.cat.precio||0);
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
       const esBonus = pg.endsWith('_bonus');
+      // grupoBase: quitar _bonus para encontrar el grupo principal
+      // El principal puede tener sufijo _promo (ej: dermatology_promo) o ser el grupo base
       const grupoBase = esBonus ? pg.replace('_bonus','') : pg;
 
       // ¿Hay algún producto "principal" del mismo grupo en el pedido?
+      // El principal puede tener promo_grupo === grupoBase (ej: 'dermatology')
+      // O promo_grupo === grupoBase + '_promo' (ej: 'dermatology_promo')
       const hayPrincipal = itemsEff.some((it2, j) =>
         j !== i &&
-        it2.cat?.promo_grupo === grupoBase &&
-        it2.cat?.promo_tipo === 'con_compra'
+        it2.cat?.promo_tipo === 'con_compra' &&
+        (it2.cat?.promo_grupo === grupoBase || it2.cat?.promo_grupo === grupoBase + '_promo')
       );
       // ¿Hay algún bonus del mismo grupo en el pedido?
+      const grupoParaBonus = esBonus ? grupoBase : pg.replace('_promo','');
       const hayBonus = itemsEff.some((it2, j) =>
-        j !== i && it2.cat?.promo_grupo === pg+'_bonus' &&
-        it2.cat?.promo_tipo === 'con_compra'
+        j !== i &&
+        it2.cat?.promo_tipo === 'con_compra' &&
+        it2.cat?.promo_grupo === grupoParaBonus + '_bonus'
       );
 
       if(esBonus){
