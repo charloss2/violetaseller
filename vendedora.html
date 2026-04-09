@@ -421,6 +421,92 @@
   let allProductos = [];
   let waPendiente = {}; // {pedidoId: {url, nombre}} — pedidos con WA para confirmar precio
 
+  // ── Override por código: corrige datos del catálogo viejo en Supabase ──────
+  // Se aplica en buscarEnCatalogo() y permite que las promos funcionen
+  // aunque el catálogo importado sea de campaña anterior.
+  // Una vez que importes el Excel C6/26 nuevo, estos datos ya vienen de Supabase
+  // y el override no tiene efecto (los datos son idénticos).
+  const CATALOG_OVERRIDE = {
+    // ── Dermatology → bonus Tratamiento Dual a $19.999 ──
+    '101130':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:19999},
+    '101129':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:25999},
+    '101131':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:15999},
+    '101331':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:12999},
+    '101332':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:12999},
+    '101302':{promo_tipo:'con_compra',promo_grupo:'dermatology_bonus',precio:24999,precio_tachado:34999},
+    // ── SK págs 10-13 → bonus Crema Total Skin a $9.999 ──
+    '101288':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:15999},
+    '101308':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:13999},
+    '100550':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '100551':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '100552':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '100553':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '100555':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '100559':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
+    '24200' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
+    '24201' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
+    '24202' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
+    '101633':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
+    '101634':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
+    '101635':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
+    '101655':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
+    '101759':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
+    '100424':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:8999},
+    '100425':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:8999},
+    '101401':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
+    '101402':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
+    '100884':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13_bonus',precio:19999,precio_tachado:34999},
+    // ── AH+ → bonus Crema para Manos a $8.999 ──
+    '101096':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:11999},
+    '100786':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:9999},
+    '33000' :{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:11999},
+    '100852':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:8999},
+    '101229':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:4999},
+    '100926':{promo_tipo:'con_compra',promo_grupo:'ah_promo_bonus',precio:14999,precio_tachado:19999},
+    // ── Frutos Rojos → bonus Crema Hidratante a $5.999 ──
+    '100658':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:7999},
+    '100724':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
+    '100657':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:6999},
+    '100725':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
+    '100898':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
+    '100723':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_bonus',precio:9999,precio_tachado:11999},
+    // ── Capilares págs 42-45 → bonus Ampolla Hydra Expert a $3.999 ──
+    '101774':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:13999},
+    '101040':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:16999},
+    '101146':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
+    '101037':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
+    '101038':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
+    '101443':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:13999},
+    '101442':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:16999},
+    '101408':{promo_tipo:'con_compra',promo_grupo:'capilar_bonus',precio:4999,precio_tachado:8999},
+    // ── Moda págs 54-55 → bonus Portaobjeto a $3.999 ──
+    '205206':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:14999},
+    '205279':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:9999},
+    '205092':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:17999},
+    '205093':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:17999},
+    '205000':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:39999},
+    '204999':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:39999},
+    '204092':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:19999},
+    '204455':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455_bonus',precio:6999,precio_tachado:12999},
+    '204456':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455_bonus',precio:6999,precio_tachado:12999},
+    // ── Mask → escala: 1=$8.999 / 2=$6.999 ──
+    '100958':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
+    '101043':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
+    '21625' :{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
+    '100997':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
+    // ── Protect uñas → escala: 1=$5.999 / 2=$4.999 ──
+    '100331':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    '21327' :{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    '101255':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    '100867':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    '100776':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    '100217':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
+    // ── Organizador Heladera Chico → escala: 1=$5.999 / 2=$4.999 ──
+    '407914':{promo_tipo:'escala',promo_grupo:'heladera_escala',precio:5999,precio_promo_2:4999},
+    // ── Especiero → escala: 1=$2.999 / 2=$1.999 ──
+    '401044':{promo_tipo:'escala',promo_grupo:'especiero_escala',precio:2999,precio_promo_2:1999},
+  };
+
   function H(){ return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; }
   async function sGet(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json();}
   async function sPost(t,d){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H(),'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
@@ -595,28 +681,38 @@
       </div>`).join('');
   }
 
-  // Busca el mejor match en catálogo por código o nombre
+  // Busca el mejor match en catálogo por código o nombre,
+  // y aplica CATALOG_OVERRIDE para corregir datos del catálogo viejo.
   function buscarEnCatalogo(textoItem){
     if(!allProductos.length) return null;
     const texto=textoItem.toLowerCase().trim();
     const codigoMatch=texto.match(/^(\d{5,6})/);
+    let hit = null;
     if(codigoMatch){
-      const hit=allProductos.find(p=>p.codigo===codigoMatch[1]);
-      if(hit) return hit;
+      hit=allProductos.find(p=>p.codigo===codigoMatch[1]);
     }
-    const palabras=texto.split(' ').filter(Boolean);
-    for(let largo=palabras.length;largo>=2;largo--){
-      const frase=palabras.slice(0,largo).join(' ');
-      const hit=allProductos.find(p=>p.nombre.toLowerCase().includes(frase));
-      if(hit) return hit;
-    }
-    for(const palabra of palabras){
-      if(palabra.length>=5){
-        const hit=allProductos.find(p=>p.nombre.toLowerCase().includes(palabra));
-        if(hit) return hit;
+    if(!hit){
+      const palabras=texto.split(' ').filter(Boolean);
+      for(let largo=palabras.length;largo>=2;largo--){
+        const frase=palabras.slice(0,largo).join(' ');
+        hit=allProductos.find(p=>p.nombre.toLowerCase().includes(frase));
+        if(hit) break;
       }
     }
-    return null;
+    if(!hit){
+      const palabras=texto.split(' ').filter(Boolean);
+      for(const palabra of palabras){
+        if(palabra.length>=5){
+          hit=allProductos.find(p=>p.nombre.toLowerCase().includes(palabra));
+          if(hit) break;
+        }
+      }
+    }
+    if(!hit) return null;
+    // Aplicar override si existe para este código
+    const ov = CATALOG_OVERRIDE[String(hit.codigo)];
+    if(!ov) return hit;
+    return { ...hit, ...ov }; // override pisa solo los campos definidos
   }
 
   // ─── LÓGICA DE PROMOCIONES ──────────────────────────────────────────────────
