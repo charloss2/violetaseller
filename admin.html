@@ -316,9 +316,9 @@
                     <th style="padding:8px 10px;">Nombre</th>
                     <th style="padding:8px 10px;text-align:right;">Precio</th>
                     <th style="padding:8px 10px;text-align:right;">Tachado</th>
-                    <th style="padding:8px 10px;text-align:center;">Tipo</th>
+                    <th style="padding:8px 10px;text-align:center;">Tipo promo</th>
                     <th style="padding:8px 10px;">Detalle promo</th>
-                    <th style="padding:8px 10px;text-align:center;">Grupo</th>
+                    <th style="padding:8px 10px;text-align:center;">Grupo promo</th>
                     <th style="padding:8px 10px;text-align:center;">Campaña</th>
                     <th style="padding:8px 10px;text-align:center;">Estado</th>
                   </tr>
@@ -340,7 +340,16 @@
         <div class="card-head">
           <span class="card-title">📦 Productos en catálogo</span>
           <div class="btns-row">
+            <input type="text" id="buscarCat" placeholder="🔍 Código o nombre..." oninput="renderCatalogo()"
+              style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:inherit;min-width:160px;">
             <select id="filtCampCat" onchange="renderCatalogo()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:inherit;"><option value="">Todas las campañas</option></select>
+            <select id="filtTipoCat" onchange="renderCatalogo()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;font-family:inherit;">
+              <option value="">Todos los tipos</option>
+              <option value="lanzamiento">🚀 Lanzamiento</option>
+              <option value="oferta_especial">🎉 Oferta especial</option>
+              <option value="escala">📦 Escala</option>
+              <option value="normal">💰 Normal</option>
+            </select>
             <button class="btn-sm primary" onclick="abrirMProd()">+ Agregar</button>
           </div>
         </div>
@@ -446,15 +455,32 @@
 
 <!-- MODAL PRODUCTO -->
 <div class="modal-bg" id="modalProd">
-  <div class="modal">
+  <div class="modal" style="max-width:560px;">
     <h3>📦 <span id="mProdTit">Nuevo Producto</span></h3>
     <input type="hidden" id="mProdId">
-    <div class="field"><label>Nombre del producto</label><input type="text" id="mProdNom"></div>
-    <div class="field"><label>Precio ($)</label><input type="number" id="mProdPrecio"></div>
-    <div class="field"><label>Campaña</label><input type="text" id="mProdCamp" placeholder="Ej: Campaña 14"></div>
-    <div class="field"><label>Código (opcional)</label><input type="text" id="mProdCod"></div>
-    <div class="field"><label>Categoría</label><input type="text" id="mProdCat"></div>
-    <div class="field"><label>Descripción</label><textarea id="mProdDesc"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;">
+      <div class="field" style="grid-column:1/-1"><label>Nombre del producto</label><input type="text" id="mProdNom" placeholder="Nombre completo tal como aparece en el catálogo"></div>
+      <div class="field"><label>Código</label><input type="text" id="mProdCod" placeholder="Ej: 101784"></div>
+      <div class="field"><label>Campaña</label><input type="text" id="mProdCamp" placeholder="Ej: 6/26"></div>
+      <div class="field"><label>Precio oferta ($)</label><input type="number" id="mProdPrecio" placeholder="Ej: 8999"></div>
+      <div class="field"><label>Precio tachado ($) <span style="font-size:10px;color:var(--text3);font-weight:400">— opcional</span></label><input type="number" id="mProdTachado" placeholder="Ej: 15999"></div>
+      <div class="field" style="grid-column:1/-1"><label>Tipo de promo</label>
+        <select id="mProdTipo">
+          <option value="normal">💰 Normal (sin descuento)</option>
+          <option value="oferta_especial">🎉 Oferta especial</option>
+          <option value="lanzamiento">🚀 Lanzamiento</option>
+          <option value="escala">📦 Escala (mejor precio por cantidad)</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1"><label>Detalle de promo <span style="font-size:10px;color:var(--text3);font-weight:400">— visible para la vendedora</span></label><input type="text" id="mProdDetalle" placeholder="Ej: Oferta lanzamiento — 44% OFF"></div>
+      <div class="field" style="grid-column:1/-1"><label>Grupo promo <span style="font-size:10px;color:var(--text3);font-weight:400">— para combos (dejar vacío si no aplica)</span></label>
+        <select id="mProdGrupo">
+          <option value="">— Sin grupo (promo individual)</option>
+          <option value="2x_mask">🎭 2x_mask — Combo Mascarillas (2 uds. = $6.999 c/u)</option>
+          <option value="2x_protect">💅 2x_protect — Combo Protect Uñas (2 uds. = $4.999 c/u)</option>
+        </select>
+      </div>
+    </div>
     <div class="modal-btns"><button class="cancel" onclick="cerrarModal('modalProd')">Cancelar</button><button class="confirm" onclick="guardarProducto()">Guardar</button></div>
   </div>
 </div>
@@ -646,18 +672,93 @@ async function guardarCliente(){
 // CATÁLOGO
 function renderCatalogo(){
   const camp=document.getElementById('filtCampCat')?.value||'';
-  const f=allProds.filter(p=>!camp||p.campana===camp);
+  const busq=(document.getElementById('buscarCat')?.value||'').toLowerCase();
+  const tipo=document.getElementById('filtTipoCat')?.value||'';
+  let f=allProds.filter(p=>{
+    const mc=!camp||p.campana===camp;
+    const mb=!busq||(p.nombre||'').toLowerCase().includes(busq)||(p.codigo||'').includes(busq);
+    const mt=!tipo||p.promo_tipo===tipo;
+    return mc&&mb&&mt;
+  });
   if(!f.length){document.getElementById('cat-list').innerHTML='<div class="empty">Sin productos.</div>';return;}
-  let h='<table><thead><tr><th>Producto</th><th>Campaña</th><th>Categoría</th><th>Precio</th><th>Acciones</th></tr></thead><tbody>';
-  f.forEach(p=>{h+=`<tr><td><strong>${p.nombre}</strong>${p.descripcion?`<br><span style="font-size:10px;color:var(--text3)">${p.descripcion}</span>`:''}</td><td style="font-size:11px">${p.campana||'—'}</td><td style="font-size:11px">${p.categoria||'—'}</td><td style="font-weight:700;color:var(--accent)">${p.precio?'$'+Number(p.precio).toLocaleString('es-AR'):'—'}</td><td><div class="btns-row"><button class="btn-sm ghost" onclick="editProd('${p.id}')">✏️</button><button class="btn-sm danger" onclick="elimProd('${p.id}')">🗑️</button></div></td></tr>`;});
+  const TIPO_BADGE={
+    lanzamiento:'<span style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.3);padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;">🚀 Lanzamiento</span>',
+    oferta_especial:'<span style="background:rgba(192,132,252,.15);color:var(--accent);border:1px solid rgba(192,132,252,.3);padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;">🎉 Oferta</span>',
+    escala:'<span style="background:rgba(129,140,248,.15);color:var(--accent2);border:1px solid rgba(129,140,248,.3);padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;">📦 Escala</span>',
+    normal:'<span style="background:rgba(255,255,255,.05);color:var(--text3);border:1px solid var(--border);padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;">💰 Normal</span>',
+  };
+  const GRUPO_BADGE={
+    '2x_mask':'<span style="background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;">🎭 2x_mask</span>',
+    '2x_protect':'<span style="background:rgba(244,114,182,.12);color:var(--accent3);border:1px solid rgba(244,114,182,.3);padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;">💅 2x_protect</span>',
+  };
+  let h=`<table><thead><tr>
+    <th>Código</th><th>Nombre</th><th>Campaña</th>
+    <th style="text-align:right">Precio</th><th style="text-align:right">Tachado</th>
+    <th>Tipo promo</th><th>Detalle promo</th><th>Grupo</th><th>Acciones</th>
+  </tr></thead><tbody>`;
+  f.forEach(p=>{
+    const tb=TIPO_BADGE[p.promo_tipo]||TIPO_BADGE.normal;
+    const gb=p.promo_grupo?GRUPO_BADGE[p.promo_grupo]||`<code style="font-size:10px">${p.promo_grupo}</code>`:'';
+    const pt=p.precio_tachado?`<span style="font-size:11px;color:var(--text3);text-decoration:line-through">$${Number(p.precio_tachado).toLocaleString('es-AR')}</span>`:'—';
+    const det=p.promo_detalle?`<span style="font-size:11px;color:var(--text2)">${p.promo_detalle}</span>`:'—';
+    h+=`<tr>
+      <td><code style="font-size:12px;color:var(--accent)">${p.codigo||'—'}</code></td>
+      <td><strong style="font-size:12px">${p.nombre}</strong></td>
+      <td style="font-size:11px;color:var(--text3)">${p.campana||'—'}</td>
+      <td style="text-align:right;font-weight:700;color:var(--accent)">${p.precio?'$'+Number(p.precio).toLocaleString('es-AR'):'—'}</td>
+      <td style="text-align:right">${pt}</td>
+      <td>${tb}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${det}</td>
+      <td>${gb}</td>
+      <td><div class="btns-row"><button class="btn-sm ghost" onclick="editProd('${p.id}')">✏️</button><button class="btn-sm danger" onclick="elimProd('${p.id}')">🗑️</button></div></td>
+    </tr>`;
+  });
   document.getElementById('cat-list').innerHTML=h+'</tbody></table>';
 }
-function abrirMProd(){document.getElementById('mProdId').value='';document.getElementById('mProdTit').textContent='Nuevo Producto';['mProdNom','mProdPrecio','mProdCamp','mProdCod','mProdCat','mProdDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('modalProd').classList.add('open');}
-function editProd(id){const p=allProds.find(x=>x.id===id);if(!p)return;document.getElementById('mProdId').value=p.id;document.getElementById('mProdTit').textContent='Editar Producto';document.getElementById('mProdNom').value=p.nombre;document.getElementById('mProdPrecio').value=p.precio||'';document.getElementById('mProdCamp').value=p.campana||'';document.getElementById('mProdCod').value=p.codigo||'';document.getElementById('mProdCat').value=p.categoria||'';document.getElementById('mProdDesc').value=p.descripcion||'';document.getElementById('modalProd').classList.add('open');}
+function abrirMProd(){
+  document.getElementById('mProdId').value='';
+  document.getElementById('mProdTit').textContent='Nuevo Producto';
+  ['mProdNom','mProdPrecio','mProdTachado','mProdCamp','mProdCod','mProdDetalle'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mProdTipo').value='oferta_especial';
+  document.getElementById('mProdGrupo').value='';
+  document.getElementById('modalProd').classList.add('open');
+}
+function editProd(id){
+  const p=allProds.find(x=>x.id===id);if(!p)return;
+  document.getElementById('mProdId').value=p.id;
+  document.getElementById('mProdTit').textContent='Editar Producto';
+  document.getElementById('mProdNom').value=p.nombre||'';
+  document.getElementById('mProdPrecio').value=p.precio||'';
+  document.getElementById('mProdTachado').value=p.precio_tachado||'';
+  document.getElementById('mProdCamp').value=p.campana||'';
+  document.getElementById('mProdCod').value=p.codigo||'';
+  document.getElementById('mProdTipo').value=p.promo_tipo||'normal';
+  document.getElementById('mProdDetalle').value=p.promo_detalle||'';
+  document.getElementById('mProdGrupo').value=p.promo_grupo||'';
+  document.getElementById('modalProd').classList.add('open');
+}
 async function guardarProducto(){
-  const id=document.getElementById('mProdId').value;const nombre=document.getElementById('mProdNom').value.trim();if(!nombre){toast('Ingresá el nombre','err');return;}
-  const data={nombre,precio:parseFloat(document.getElementById('mProdPrecio').value)||null,campana:document.getElementById('mProdCamp').value.trim(),codigo:document.getElementById('mProdCod').value.trim(),categoria:document.getElementById('mProdCat').value.trim(),descripcion:document.getElementById('mProdDesc').value.trim()};
-  try{id?await sPatch('productos',id,data):await sPost('productos',data);toast('✅ Guardado','ok');cerrarModal('modalProd');await cargarTodo();}catch(e){toast('❌ '+e.message,'err');}
+  const id=document.getElementById('mProdId').value;
+  const nombre=document.getElementById('mProdNom').value.trim();
+  if(!nombre){toast('Ingresá el nombre','err');return;}
+  const codigo=document.getElementById('mProdCod').value.trim();
+  if(!codigo||!/^\d{4,6}$/.test(codigo)){toast('Código inválido — debe tener 4-6 dígitos','err');return;}
+  const campana=document.getElementById('mProdCamp').value.trim();
+  if(!campana){toast('Ingresá la campaña','err');return;}
+  const data={
+    nombre,
+    codigo,
+    campana,
+    precio:parseFloat(document.getElementById('mProdPrecio').value)||null,
+    precio_tachado:parseFloat(document.getElementById('mProdTachado').value)||null,
+    promo_tipo:document.getElementById('mProdTipo').value||'normal',
+    promo_detalle:document.getElementById('mProdDetalle').value.trim(),
+    promo_grupo:document.getElementById('mProdGrupo').value.trim(),
+  };
+  try{
+    id?await sPatch('productos',id,data):await sPost('productos',data);
+    toast('✅ Guardado','ok');cerrarModal('modalProd');await cargarTodo();
+  }catch(e){toast('❌ '+e.message,'err');}
 }
 async function elimProd(id){if(!confirm('¿Eliminar producto?'))return;try{await sDel('productos',id);toast('🗑️ Eliminado');await cargarTodo();}catch(e){toast('❌ '+e.message,'err');}}
 
@@ -743,22 +844,24 @@ function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlC
         const data = new Uint8Array(e.target.result);
         const wb   = XLSX.read(data, {type:'array'});
 
-        // Buscar hoja con datos (no instrucciones)
+        // Buscar la primera hoja que tenga productos (no instrucciones, no leeme, no grupos)
         let sheetName = wb.SheetNames[0];
         for(const sn of wb.SheetNames){
-          if(sn.toLowerCase().includes('instruc')) continue;
+          const snl = sn.toLowerCase();
+          if(snl.includes('instruc') || snl.includes('leeme') || snl.includes('grupo') || snl.includes('readme')) continue;
           sheetName = sn; break;
         }
         const ws   = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
 
-        if(!rows.length){ toast('❌ El archivo está vacío'); return; }
+        if(!rows.length){ toast('❌ El archivo está vacío o no tiene datos en la hoja "'+sheetName+'"'); return; }
 
-        // Normalizar columnas (case-insensitive, sin tildes)
-        const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+        // Normalizar nombre de columna: minúsculas, sin tildes ni espacios
+        const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\s_-]+/g,'').trim();
         const findCol = (row, candidates) => {
           for(const k of Object.keys(row)){
-            if(candidates.some(c => norm(k).includes(c))) return k;
+            const nk = norm(k);
+            if(candidates.some(c => nk === c || nk.includes(c))) return k;
           }
           return null;
         };
@@ -766,71 +869,111 @@ function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlC
         const sample = rows[0];
         const colCod     = findCol(sample, ['codigo','code','cod']);
         const colNom     = findCol(sample, ['nombre','name','producto','descripcion']);
-        const colPre     = findCol(sample, ['precio']);
-        const colTach    = findCol(sample, ['tachado','anterior','original','tach']);
-        const colTipo    = findCol(sample, ['tipo','promo','type']);
-        const colDetalle = findCol(sample, ['detalle','descripcion_promo','detail']);
-        const colGrupo   = findCol(sample, ['grupo','group','promo_grupo']);
+        // precio: buscar primero "precio" exacto (no "precio tachado")
+        const colPre = (() => {
+          for(const k of Object.keys(sample)){
+            const nk = norm(k);
+            if(nk === 'precio') return k;
+          }
+          for(const k of Object.keys(sample)){
+            const nk = norm(k);
+            if(nk.startsWith('precio') && !nk.includes('tach') && !nk.includes('ant')) return k;
+          }
+          return null;
+        })();
+        const colTach = (() => {
+          for(const k of Object.keys(sample)){
+            const nk = norm(k);
+            if(nk.includes('tach') || nk.includes('anterior') || nk === 'preciotachado' || nk === 'precioanterior') return k;
+          }
+          return null;
+        })();
+        const colTipo    = findCol(sample, ['tipopromo','tipo','promo','type']);
+        const colDetalle = findCol(sample, ['detallepromo','detalle','descripcionpromo','detail']);
+        const colGrupo   = findCol(sample, ['grupopromo','grupo','group','promgrupo']);
         const colCamp    = findCol(sample, ['campana','camp','campaign']);
 
         if(!colCod || !colNom || !colPre){
-          toast('❌ Faltan columnas: se necesita código, nombre y precio');
+          toast('❌ Faltan columnas requeridas. Se necesita CÓDIGO, NOMBRE y PRECIO. Detectado: '
+            +(colCod?'✅ código':'❌ código')+' '+(colNom?'✅ nombre':'❌ nombre')+' '+(colPre?'✅ precio':'❌ precio'));
           return;
         }
 
         const TIPOS_VALIDOS = ['lanzamiento','oferta_especial','escala','normal'];
+        const GRUPOS_VALIDOS = ['2x_mask','2x_protect',''];
         xlsDatosValidados = [];
         const errores = [];
 
         rows.forEach((row, i) => {
           const codigo  = String(row[colCod]||'').trim();
           const nombre  = String(row[colNom]||'').trim();
-          const precio  = parseInt(String(row[colPre]||'').replace(/[^0-9]/g,''));
-          const tachado = row[colTach] ? parseInt(String(row[colTach]).replace(/[^0-9]/g,'')) : null;
+          // Limpiar precios: eliminar $, puntos, espacios
+          const cleanNum = s => parseInt(String(s||'').replace(/[$\s.]/g,'').replace(/,/g,'.').replace(/[^0-9]/g,''));
+          const precio  = cleanNum(row[colPre]);
+          const tachado = colTach ? cleanNum(row[colTach]) : NaN;
           const tipoBruto = String(row[colTipo]||'normal').trim().toLowerCase();
-          const tipo    = TIPOS_VALIDOS.includes(tipoBruto) ? tipoBruto : 'normal';
-          // Campaña: primero del archivo, luego del input manual
+          const tipo    = TIPOS_VALIDOS.includes(tipoBruto) ? tipoBruto : 'oferta_especial';
+
+          // Campaña: del archivo primero, luego del input
           let campRaw = colCamp ? String(row[colCamp]||'').trim() : '';
           let campana = campRaw || (campNum ? campNum+'/26' : '');
-          // Normalizar: si es solo número, agregar /26
+          // Normalizar: si es solo número → agregar /26
           if(campana && /^\d+$/.test(campana)) campana = campana + '/26';
+          // Si tiene "Campaña " adelante → quitar prefijo
+          campana = campana.replace(/^campa[ñn]a\s*/i,'').trim();
 
           const detalle = colDetalle ? String(row[colDetalle]||'').trim() : '';
-          const grupo   = colGrupo   ? String(row[colGrupo]||'').trim()   : '';
+          // Grupo: solo aceptar valores conocidos
+          const grupoRaw = colGrupo ? String(row[colGrupo]||'').trim() : '';
+          const grupo = GRUPOS_VALIDOS.includes(grupoRaw) ? grupoRaw : (grupoRaw ? grupoRaw : '');
 
           const fila_err = [];
           if(!codigo || !/^\d{4,6}$/.test(codigo)) fila_err.push('código inválido');
           if(!nombre)    fila_err.push('nombre vacío');
-          if(!precio || isNaN(precio)) fila_err.push('precio inválido');
+          if(!precio || isNaN(precio) || precio <= 0) fila_err.push('precio inválido');
           if(!campana)   fila_err.push('campaña vacía');
 
-          xlsDatosValidados.push({ codigo, nombre, precio: isNaN(precio)?null:precio, precio_tachado: isNaN(tachado)?null:tachado, promo_tipo:tipo, promo_detalle:detalle, promo_grupo:grupo, campana, _err: fila_err });
+          xlsDatosValidados.push({
+            codigo, nombre,
+            precio: isNaN(precio) ? null : precio,
+            precio_tachado: isNaN(tachado) ? null : tachado,
+            promo_tipo: tipo,
+            promo_detalle: detalle,
+            promo_grupo: grupo,
+            campana,
+            _err: fila_err
+          });
           if(fila_err.length) errores.push('Fila '+(i+2)+': '+fila_err.join(', '));
         });
 
         // Render tabla preview
         const tbody = document.getElementById('xlsTbody');
-        const TIPO_COLOR = {lanzamiento:'#fef9c3',oferta_especial:'#d1fae5',escala:'#dbeafe',normal:'#f9fafb'};
+        const TIPO_COLOR = {lanzamiento:'#fef9c3',oferta_especial:'#f3e8ff',escala:'#dbeafe',normal:'#f9fafb'};
+        const TIPO_ICON  = {lanzamiento:'🚀',oferta_especial:'🎉',escala:'📦',normal:'💰'};
+        const GRUPO_PILL = {
+          '2x_mask':'<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:700;">🎭 2x_mask</span>',
+          '2x_protect':'<span style="background:#fce7f3;color:#9d174d;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:700;">💅 2x_protect</span>',
+        };
         tbody.innerHTML = xlsDatosValidados.map((p,i)=>`
           <tr style="background:${p._err.length?'#fee2e2':TIPO_COLOR[p.promo_tipo]||'#f9fafb'}">
             <td style="padding:6px 10px;text-align:center;color:#6b7280;font-size:11px;">${i+1}</td>
             <td style="padding:6px 10px;font-weight:700;color:#7c3aed;">${p.codigo}</td>
-            <td style="padding:6px 10px;">${p.nombre}</td>
-            <td style="padding:6px 10px;text-align:right;">${p.precio?'$'+p.precio.toLocaleString('es-AR'):''}</td>
+            <td style="padding:6px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</td>
+            <td style="padding:6px 10px;text-align:right;font-weight:600;">${p.precio?'$'+p.precio.toLocaleString('es-AR'):''}</td>
             <td style="padding:6px 10px;text-align:right;color:#9ca3af;text-decoration:line-through;">${p.precio_tachado?'$'+p.precio_tachado.toLocaleString('es-AR'):''}</td>
-            <td style="padding:6px 10px;text-align:center;font-size:11px;">${p.promo_tipo}</td>
-            <td style="padding:6px 10px;font-size:11px;color:#7c3aed;">${p.promo_detalle||''}</td>
-            <td style="padding:6px 10px;text-align:center;font-size:10px;color:#be185d;">${p.promo_grupo||''}</td>
+            <td style="padding:6px 10px;text-align:center;font-size:11px;">${TIPO_ICON[p.promo_tipo]||''} ${p.promo_tipo}</td>
+            <td style="padding:6px 10px;font-size:11px;color:#7c3aed;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.promo_detalle}">${p.promo_detalle||''}</td>
+            <td style="padding:6px 10px;text-align:center;">${GRUPO_PILL[p.promo_grupo]||''}</td>
             <td style="padding:6px 10px;text-align:center;font-size:11px;">${p.campana}</td>
             <td style="padding:6px 10px;text-align:center;">${p._err.length?'<span style="color:#ef4444;font-size:11px;">⚠️ '+p._err.join(', ')+'</span>':'<span style="color:#10b981;font-size:11px;">✅</span>'}</td>
           </tr>`).join('');
 
         const validos = xlsDatosValidados.filter(p=>!p._err.length).length;
-        document.getElementById('xlsPreviewTitle').textContent = `✅ ${validos} productos listos · ${xlsDatosValidados.length - validos} con errores`;
-        document.getElementById('xlsErrors').textContent = errores.length ? errores.slice(0,3).join(' | ')+(errores.length>3?' ...':'') : '';
+        document.getElementById('xlsPreviewTitle').textContent = `✅ ${validos} productos listos · ${xlsDatosValidados.length - validos} con errores · Hoja: "${sheetName}"`;
+        document.getElementById('xlsErrors').textContent = errores.length ? errores.slice(0,3).join(' | ')+(errores.length>3?' …':'') : '';
         document.getElementById('xlsGuardarBtn').disabled = validos === 0;
         document.getElementById('xlsPreview').style.display = 'block';
-        toast(`📊 ${xlsDatosValidados.length} filas leídas`);
+        toast(`📊 ${xlsDatosValidados.length} filas leídas desde "${sheetName}"`);
 
       }catch(err){
         console.error(err);
@@ -851,50 +994,100 @@ function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlC
     const txt = document.getElementById('xlsProgresoTxt');
 
     const batchSize = 50;
-    let ok = 0, err = 0;
+    let ok = 0, errCount = 0;
     for(let i=0; i<validos.length; i+=batchSize){
       const batch = validos.slice(i, i+batchSize).map(p=>({
-        codigo: p.codigo, nombre: p.nombre, precio: p.precio,
-        precio_tachado: p.precio_tachado||null, promo_tipo: p.promo_tipo, campana: p.campana
+        codigo:        p.codigo,
+        nombre:        p.nombre,
+        precio:        p.precio,
+        precio_tachado:p.precio_tachado || null,
+        promo_tipo:    p.promo_tipo,
+        promo_detalle: p.promo_detalle  || '',
+        promo_grupo:   p.promo_grupo    || '',
+        campana:       p.campana
       }));
       try{
-        const res = await sPost('productos', batch);
-        if(res) ok += batch.length; else err += batch.length;
-      }catch(e){ err += batch.length; }
+        // Upsert: ON CONFLICT (codigo, campana) DO UPDATE
+        const res = await fetch(`${SU}/rest/v1/productos`, {
+          method: 'POST',
+          headers: {
+            ...H(),
+            'Prefer': 'resolution=merge-duplicates,return=representation'
+          },
+          body: JSON.stringify(batch)
+        });
+        if(res.ok){ ok += batch.length; } else { errCount += batch.length; console.error(await res.text()); }
+      }catch(e){ errCount += batch.length; console.error(e); }
       const pct = Math.round((i+batchSize)/validos.length*100);
       bar.style.width = Math.min(pct,100)+'%';
       txt.textContent = `Guardando... ${Math.min(i+batchSize,validos.length)} de ${validos.length}`;
       await new Promise(r=>setTimeout(r,200));
     }
 
-    txt.textContent = `✅ ${ok} productos guardados${err?' · ⚠️ '+err+' errores':''}`;
-    bar.style.background = err ? '#f59e0b' : 'var(--success)';
-    toast(`✅ ${ok} productos importados a la base de datos`);
+    txt.textContent = `✅ ${ok} productos guardados${errCount?' · ⚠️ '+errCount+' errores':''}`;
+    bar.style.background = errCount ? '#f59e0b' : 'var(--success)';
+    toast(errCount ? `⚠️ ${ok} ok · ${errCount} con error` : `✅ ${ok} productos importados correctamente`, errCount?'':'ok');
     document.getElementById('xlsGuardarBtn').disabled = false;
-    if(typeof renderCatalogo === 'function') renderCatalogo();
+    await cargarTodo();
   }
 
   function descargarPlantillaXls(){
-    // Genera un xlsx vacío con los encabezados correctos
     if(typeof XLSX === 'undefined'){ toast('❌ Librería XLSX no cargada'); return; }
     const wb = XLSX.utils.book_new();
-    const headers = [['codigo','nombre','precio','precio_tachado','promo_tipo','campana']];
-    const ws = XLSX.utils.aoa_to_sheet(headers);
-    ws['!cols'] = [{wch:10},{wch:60},{wch:12},{wch:15},{wch:18},{wch:10}];
-    XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+
+    // Hoja principal con encabezados + filas de ejemplo
+    const rows = [
+      ['CÓDIGO','NOMBRE','PRECIO','PRECIO TACHADO','TIPO PROMO','DETALLE PROMO','GRUPO PROMO','CAMPAÑA'],
+      // Ejemplos reales del catálogo C6/26
+      ['101784','SK Long Lasting Powerliner Delineador Líquido para Ojos 01 Negro 0.6g',8999,15999,'lanzamiento','Oferta lanzamiento — 44% OFF','','6/26'],
+      ['101814','SK Long Lasting Esmalte Gel 56 Rose Latte 10ml',5499,9999,'lanzamiento','Oferta lanzamiento — 45% OFF','','6/26'],
+      ['101288','Silk Kiss Prime + Glow Hidratante con Ácido Hialurónico 30g',15999,29999,'oferta_especial','Oferta especial — 47% OFF','','6/26'],
+      ['101190','SK Long Lasting Esmalte Gel 36 Lila Suave 10ml',5999,9999,'escala','Precio escala — mejor precio llevando más unidades','','6/26'],
+      ['100958','Mask Mascarilla de Palta Hidratante & Antioxidante 50g',11999,22999,'oferta_especial','2 unidades a $6.999 c/u o 1 a $8.999','2x_mask','6/26'],
+      ['100331','Protect Fast Dry Top Coat para Uñas 10ml',5999,9999,'oferta_especial','2 a $4.999 c/u o 1 a $5.999','2x_protect','6/26'],
+      ['101443','Expert Plex Aceite Capilar Reconstructivo 20ml',13999,22999,'normal','','','6/26'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:10},{wch:70},{wch:10},{wch:14},{wch:17},{wch:45},{wch:14},{wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Productos 6-26');
+
     // Hoja instrucciones
-    const wi = XLSX.utils.aoa_to_sheet([
+    const instrRows = [
       ['FORMATO PARA IMPORTAR CATÁLOGO — VIOLETTA SELLER'],[''],
-      ['Columnas obligatorias:'],
-      ['codigo','Código numérico 5-6 dígitos. OBLIGATORIO.'],
-      ['nombre','Nombre completo del producto. OBLIGATORIO.'],
-      ['precio','Precio de venta en pesos (sin $ ni puntos). OBLIGATORIO.'],
-      ['precio_tachado','Precio anterior tachado. Opcional.'],
-      ['promo_tipo','lanzamiento | oferta_especial | escala | normal'],
-      ['campana','Número de campaña: ej 6/26. OBLIGATORIO.'],
-    ]);
+      ['COLUMNAS REQUERIDAS','',''],
+      ['Columna','Tipo','Descripción'],
+      ['CÓDIGO','Número (4-6 dígitos)','Código numérico del producto. OBLIGATORIO.'],
+      ['NOMBRE','Texto','Nombre completo del producto. OBLIGATORIO.'],
+      ['PRECIO','Número entero','Precio de venta en pesos, sin $ ni puntos. OBLIGATORIO.'],
+      ['PRECIO TACHADO','Número entero','Precio anterior (se muestra tachado). Dejar vacío si no aplica.'],
+      ['','',''],
+      ['COLUMNAS OPCIONALES','',''],
+      ['TIPO PROMO','Texto','Valores válidos: lanzamiento | oferta_especial | escala | normal'],
+      ['DETALLE PROMO','Texto','Descripción visible para la vendedora. Ej: "Oferta lanzamiento — 44% OFF"'],
+      ['GRUPO PROMO','Texto','Solo para combos. Valores: 2x_mask | 2x_protect | (vacío)'],
+      ['CAMPAÑA','Texto','Número de campaña. Ej: 6/26. Se puede completar en el campo del formulario.'],
+      ['','',''],
+      ['TIPOS DE PROMO','',''],
+      ['lanzamiento','','Nuevo producto al mercado. Badge especial en el panel.'],
+      ['oferta_especial','','Descuento por campaña. El más común.'],
+      ['escala','','Precio que mejora al pedir más unidades.'],
+      ['normal','','Sin promoción activa.'],
+      ['','',''],
+      ['GRUPOS DE PROMO (combos)','',''],
+      ['2x_mask','','Mascarillas: 1 unidad = $8.999 / 2 o más = $6.999 c/u'],
+      ['2x_protect','','Protect Uñas: 1 unidad = $5.999 / 2 o más = $4.999 c/u'],
+      ['','',''],
+      ['NOTAS','',''],
+      ['· El importador detecta columnas automáticamente (no importa el orden ni las mayúsculas).','',''],
+      ['· El sistema hace UPSERT: si ya existe el mismo código+campaña, lo ACTUALIZA.','',''],
+      ['· La hoja tiene que llamarse cualquier cosa excepto: INSTRUCCIONES, LEEME, GRUPOS PROMOS.','',''],
+    ];
+    const wi = XLSX.utils.aoa_to_sheet(instrRows);
+    wi['!cols'] = [{wch:24},{wch:22},{wch:60}];
     XLSX.utils.book_append_sheet(wb, wi, 'INSTRUCCIONES');
+
     XLSX.writeFile(wb, 'plantilla_catalogo_violetta.xlsx');
+    toast('⬇️ Plantilla descargada');
   }
 
   function copyLink(f){navigator.clipboard.writeText(window.location.origin+window.location.pathname.replace('admin.html','')+f).then(()=>toast('📋 Link copiado'));}
