@@ -373,7 +373,6 @@
           <button class="btn-sm outline" onclick="provSelAll(false)">⬜ Deseleccionar todos</button>
           <button class="btn-sm primary" onclick="imprimirPedidoProveedor()">🖨️ Imprimir selección</button>
           <button class="btn-sm success" onclick="exportarExcelVioletta()" style="background:#059669;">📊 Excel consolidado (todos)</button>
-          <button class="btn-sm success" onclick="exportarExcelPorCliente()" style="background:#0d9488;">👤 Excel por cliente</button>
         </div>
       </div>
 
@@ -2284,19 +2283,19 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 
   // ── HELPERS EXCEL VIOLETTA ────────────────────────────────────────────────
 
-  // Genera una hoja ItensPedido con SKU / Quantidade / Preço
+  // Genera hoja ItensPedido con Nro / SKU / Quantidade
   function _buildItensPedido(rows){
-    const wsData = [["SKU","Quantidade"]];
-    rows.forEach(r => {
-      wsData.push([String(r.codigo||r.sku||''), parseInt(r.qty)||1]);
+    const wsData = [["Nro","SKU","Quantidade"]];
+    rows.forEach((r, i) => {
+      wsData.push([i+1, String(r.codigo||r.sku||''), parseInt(r.qty)||1]);
     });
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // SKU como texto forzado
+    // SKU como texto forzado (col B = índice 1)
     rows.forEach((_, i) => {
-      const cell = ws[XLSX.utils.encode_cell({r:i+1, c:0})];
+      const cell = ws[XLSX.utils.encode_cell({r:i+1, c:1})];
       if(cell){ cell.t='s'; cell.z='@'; }
     });
-    ws['!cols'] = [{wch:14},{wch:12}];
+    ws['!cols'] = [{wch:6},{wch:14},{wch:12}];
     return ws;
   }
 
