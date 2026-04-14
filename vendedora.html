@@ -178,6 +178,9 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="copiarMiLink()"
+        style="background:rgba(236,72,153,.12);color:#be185d;border:1.5px solid #fbcfe8;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;"
+        title="Copiá el link para compartir con tus clientas">🔗 Mi link</button>
       <button onclick="document.getElementById('extModal').classList.add('open')"
         style="background:rgba(124,58,237,.12);color:#7c3aed;border:1.5px solid #e9d5ff;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;"
         title="Instalar extensión de Chrome">🧩 Extensión</button>
@@ -553,6 +556,55 @@
   }
 
   function doLogout(){if(_pollingInterval)clearInterval(_pollingInterval);localStorage.removeItem('violeta_logged_vendor');location.reload();}
+
+  function copiarMiLink(){
+    if(!currentUser) return;
+    const username = currentUser.username || '';
+    // Campaña activa: leer del selector de proveedor o usar la más reciente
+    const campSel = document.getElementById('provFiltCamp');
+    let camp = '';
+    if(campSel && campSel.value) {
+      // Extraer solo el número: "6/26" → "6"
+      camp = campSel.value.replace(/^0/,'').split('/')[0];
+    }
+    if(!camp) camp = '6'; // fallback campaña 6
+
+    const base = window.location.origin + window.location.pathname.replace('vendedora.html','');
+    const link = `${base}cliente.html?v=${encodeURIComponent(username)}&c=${encodeURIComponent(camp)}`;
+
+    // Mostrar modal con el link y botón de copiar
+    const ya = document.getElementById('miLinkModal');
+    if(ya) ya.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'miLinkModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML = `
+      <div style="background:white;border-radius:20px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:36px;">🔗</div>
+          <h3 style="color:#7c3aed;margin:8px 0 4px;font-size:18px;">Tu link de cliente</h3>
+          <p style="color:#6b7280;font-size:13px;margin:0;">Compartilo con tus clientas — ya viene con tu nombre y la campaña ${camp}/26 seleccionados</p>
+        </div>
+        <div style="background:#f5f0ff;border:2px solid #e9d5ff;border-radius:10px;padding:12px 14px;margin-bottom:16px;word-break:break-all;font-size:12px;color:#4c1d95;font-family:monospace;">
+          ${link}
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="navigator.clipboard.writeText('${link}').then(()=>{this.textContent='✅ ¡Copiado!';setTimeout(()=>this.textContent='📋 Copiar link',2000)})"
+            style="flex:1;background:#7c3aed;color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+            📋 Copiar link
+          </button>
+          <button onclick="document.getElementById('miLinkModal').remove()"
+            style="background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:inherit;">
+            Cerrar
+          </button>
+        </div>
+        <p style="text-align:center;font-size:11px;color:#9ca3af;margin:12px 0 0;">También podés mandarlo directamente por WhatsApp 💜</p>
+      </div>
+    `;
+    modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+  }
 
   // ===== TABS =====
   function showTab(id){

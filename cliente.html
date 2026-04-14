@@ -389,9 +389,10 @@
   let todasVendedoras = [];
   let vendedoraSeleccionada = null;
 
-  // URL param para preseleccionar vendedora
+  // URL params para preseleccionar vendedora y campaña
   const urlParams = new URLSearchParams(window.location.search);
   const vendedoraParam = urlParams.get('v') || null;
+  const campanaParam   = urlParams.get('c') || null;
 
   function H(){ return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; }
   async function sGet(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json();}
@@ -446,6 +447,20 @@
         if(v){
           sel.value=v.id;
           vendedoraSeleccionada=v;
+        }
+      }
+      // Precargar campaña desde URL y cargar catálogo automáticamente
+      if(campanaParam){
+        const campInput = document.getElementById('campNum');
+        if(campInput){
+          campInput.value = campanaParam.trim();
+          // Ocultar el campo de campaña si viene preseleccionado — ya no hace falta que el cliente lo toque
+          const campWrap = campInput.closest('.camp-wrap');
+          if(campWrap){
+            campWrap.style.display = 'none';
+          }
+          // Disparar carga del catálogo automáticamente
+          await onCampanaChange();
         }
       }
     }catch(e){document.getElementById('selVendedora').innerHTML='<option value="">Error al cargar vendedoras</option>';}
