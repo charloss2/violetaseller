@@ -569,7 +569,7 @@
     }
     if(!camp) camp = '6'; // fallback campaña 6
 
-    const base = window.location.origin + window.location.pathname.replace('vendedora.html','');
+    const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
     const link = `${base}cliente.html?v=${encodeURIComponent(username)}&c=${encodeURIComponent(camp)}`;
 
     // Mostrar modal con el link y botón de copiar
