@@ -504,8 +504,17 @@
       if(campWrap) campWrap.style.display = '';
     }
     resetPedidoItems();
-    allProductosCli=[];
-    const ce=document.getElementById('camp-estado');if(ce)ce.textContent='';
+    // Solo limpiar catálogo si NO viene por parámetro URL
+    // (si viene por parámetro, el catálogo ya se cargó en cargarVendedoras y no debe borrarse)
+    if(!campanaParam){
+      allProductosCli=[];
+    } else if(!allProductosCli.length){
+      // Vino por parámetro pero el catálogo está vacío (ej: se llamó resetForm antes de cargar) → recargar
+      onCampanaChange();
+    }
+    if(!campanaParam){
+      const ce=document.getElementById('camp-estado');if(ce)ce.textContent='';
+    }
     document.getElementById('pNotas').value='';
     document.getElementById('pPago').value='';
     if(currentCliente?.nombre&&!currentCliente.nombre.startsWith('Cliente '))
