@@ -161,7 +161,6 @@
       <div class="nav-item" onclick="showSec('vendedoras')" data-s="vendedoras"><span class="icon">👥</span>Vendedoras</div>
       <div class="nav-item" onclick="showSec('clientes')" data-s="clientes"><span class="icon">🙍</span>Clientes</div>
       <div class="nav-item" onclick="showSec('catalogo')" data-s="catalogo"><span class="icon">📚</span>Catálogo</div>
-      <div class="nav-item" onclick="showSec('config')" data-s="config"><span class="icon">⚙️</span>Configuración</div>
       <div class="nav-item" onclick="showSec('proveedor')" data-s="proveedor"><span class="icon">📦</span>Pedido Proveedor</div>
     </nav>
     <div class="sidebar-footer">
@@ -350,15 +349,8 @@
 
     <!-- CONFIG -->
     <div class="section" id="sec-config">
-      <div class="page-header"><h2 class="page-title">Configuración</h2><p class="page-sub">Ajustes globales del sistema</p></div>
+      <div class="page-header"><h2 class="page-title">Links del sistema</h2><p class="page-sub">Links para compartir</p></div>
       <div class="cfg-card">
-        <h3>🗄️ Supabase — Base de datos</h3>
-        <p>Esta configuración aplica a todo el sistema. Las vendedoras y clientes usan el mismo localStorage del dominio.</p>
-        <div class="field"><label>URL del proyecto</label><input type="text" id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
-        <div class="field"><label>Anon Key</label><input type="text" id="cfgKey" placeholder="eyJhbGc..."></div>
-        <button class="btn-sm primary" onclick="guardarConfig()" style="width:100%;padding:12px;font-size:13px;">Guardar configuración</button>
-        <div id="cfgSt" style="margin-top:10px;font-size:12px;color:var(--text2);"></div>
-      </div>
       <div class="cfg-card">
         <h3>📋 SQL para crear tablas</h3>
         <p>Ejecutá esto en el SQL Editor de Supabase (una sola vez):</p>
@@ -463,8 +455,8 @@
 
 <script>
 const ROOT={user:'root',pass:'Root.415263'};
-const _DEFAULT_SU='https://yafxocedtrktdrplpvie.supabase.co',_DEFAULT_SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
-let SU=_DEFAULT_SU,SK=_DEFAULT_SK;
+const SU='https://yafxocedtrktdrplpvie.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
 let allPeds=[],allVends=[],allClis=[],allProds=[];
 
 function H(){return{'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK};}
@@ -705,21 +697,9 @@ async function guardarProdsAI(){
 }
 
 // CONFIG
-function initCfg(){
-  SU=localStorage.getItem('violeta_supa_url')||_DEFAULT_SU;
-  SK=localStorage.getItem('violeta_supa_key')||_DEFAULT_SK;
-  const el_url=document.getElementById('cfgUrl');
-  const el_key=document.getElementById('cfgKey');
-  if(el_url) el_url.value=SU;
-  if(el_key) el_key.value=SK;
-}
+function initCfg(){ /* credentials fixed */ }
 
-function guardarConfig(){
-  const url=document.getElementById('cfgUrl').value.trim();const key=document.getElementById('cfgKey').value.trim();
-  if(!url||!key){toast('Completá URL y Key','err');return;}
-  localStorage.setItem('violeta_supa_url',url);localStorage.setItem('violeta_supa_key',key);
-  SU=url;SK=key;document.getElementById('cfgSt').textContent='✅ Guardado correctamente';toast('✅ Configuración guardada','ok');cargarTodo();
-}
+function guardarConfig(){ /* disabled */ }
 function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlCode').textContent).then(()=>toast('📋 SQL copiado'));}
 
   // ── IMPORTAR CATÁLOGO DESDE EXCEL ─────────────────────────────────────────
