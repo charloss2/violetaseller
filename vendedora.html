@@ -178,9 +178,6 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <button onclick="copiarMiLink()"
-        style="background:rgba(236,72,153,.12);color:#be185d;border:1.5px solid #fbcfe8;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;"
-        title="Copiá el link para compartir con tus clientas">🔗 Mi link</button>
       <button onclick="document.getElementById('extModal').classList.add('open')"
         style="background:rgba(124,58,237,.12);color:#7c3aed;border:1.5px solid #e9d5ff;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;"
         title="Instalar extensión de Chrome">🧩 Extensión</button>
@@ -376,6 +373,7 @@
           <button class="btn-sm outline" onclick="provSelAll(false)">⬜ Deseleccionar todos</button>
           <button class="btn-sm primary" onclick="imprimirPedidoProveedor()">🖨️ Imprimir selección</button>
           <button class="btn-sm success" onclick="exportarExcelVioletta()" style="background:#059669;">📊 Excel consolidado (todos)</button>
+          <button class="btn-sm success" onclick="exportarExcelPorCliente()" style="background:#0d9488;">👤 Excel por cliente</button>
         </div>
       </div>
 
@@ -423,92 +421,6 @@
   let allProductos = [];
   let waPendiente = {}; // {pedidoId: {url, nombre}} — pedidos con WA para confirmar precio
 
-  // ── Override por código: corrige datos del catálogo viejo en Supabase ──────
-  // Se aplica en buscarEnCatalogo() y permite que las promos funcionen
-  // aunque el catálogo importado sea de campaña anterior.
-  // Una vez que importes el Excel C6/26 nuevo, estos datos ya vienen de Supabase
-  // y el override no tiene efecto (los datos son idénticos).
-  const CATALOG_OVERRIDE = {
-    // ── Dermatology → bonus Tratamiento Dual a $19.999 ──
-    '101130':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:19999},
-    '101129':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:25999},
-    '101131':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:15999},
-    '101331':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:12999},
-    '101332':{promo_tipo:'con_compra',promo_grupo:'dermatology_promo',precio:12999},
-    '101302':{promo_tipo:'con_compra',promo_grupo:'dermatology_bonus',precio:24999,precio_tachado:34999},
-    // ── SK págs 10-13 → bonus Crema Total Skin a $9.999 ──
-    '101288':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:15999},
-    '101308':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:13999},
-    '100550':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '100551':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '100552':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '100553':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '100555':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '100559':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:9999},
-    '24200' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
-    '24201' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
-    '24202' :{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:12999},
-    '101633':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
-    '101634':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
-    '101635':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
-    '101655':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:6999},
-    '101759':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
-    '100424':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:8999},
-    '100425':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:8999},
-    '101401':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
-    '101402':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13',precio:14999},
-    '100884':{promo_tipo:'con_compra',promo_grupo:'sk_pags10_13_bonus',precio:19999,precio_tachado:34999},
-    // ── AH+ → bonus Crema para Manos a $8.999 ──
-    '101096':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:11999},
-    '100786':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:9999},
-    '33000' :{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:11999},
-    '100852':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:8999},
-    '101229':{promo_tipo:'con_compra',promo_grupo:'ah_promo',precio:4999},
-    '100926':{promo_tipo:'con_compra',promo_grupo:'ah_promo_bonus',precio:14999,precio_tachado:19999},
-    // ── Frutos Rojos → bonus Crema Hidratante a $5.999 ──
-    '100658':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:7999},
-    '100724':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
-    '100657':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:6999},
-    '100725':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
-    '100898':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_promo',precio:9999},
-    '100723':{promo_tipo:'con_compra',promo_grupo:'frutos_rojos_bonus',precio:9999,precio_tachado:11999},
-    // ── Capilares págs 42-45 → bonus Ampolla Hydra Expert a $3.999 ──
-    '101774':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:13999},
-    '101040':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:16999},
-    '101146':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
-    '101037':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
-    '101038':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:14999},
-    '101443':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:13999},
-    '101442':{promo_tipo:'con_compra',promo_grupo:'capilar_promo',precio:16999},
-    '101408':{promo_tipo:'con_compra',promo_grupo:'capilar_bonus',precio:4999,precio_tachado:8999},
-    // ── Moda págs 54-55 → bonus Portaobjeto a $3.999 ──
-    '205206':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:14999},
-    '205279':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:9999},
-    '205092':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:17999},
-    '205093':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:17999},
-    '205000':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:39999},
-    '204999':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:39999},
-    '204092':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455',precio:19999},
-    '204455':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455_bonus',precio:6999,precio_tachado:12999},
-    '204456':{promo_tipo:'con_compra',promo_grupo:'moda_pags5455_bonus',precio:6999,precio_tachado:12999},
-    // ── Mask → escala: 1=$8.999 / 2=$6.999 ──
-    '100958':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
-    '101043':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
-    '21625' :{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
-    '100997':{promo_tipo:'escala',promo_grupo:'mask_escala',precio:8999,precio_promo_2:6999},
-    // ── Protect uñas → escala: 1=$5.999 / 2=$4.999 ──
-    '100331':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    '21327' :{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    '101255':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    '100867':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    '100776':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    '100217':{promo_tipo:'escala',promo_grupo:'protect_escala',precio:5999,precio_promo_2:4999},
-    // ── Organizador Heladera Chico → escala: 1=$5.999 / 2=$4.999 ──
-    '407914':{promo_tipo:'escala',promo_grupo:'heladera_escala',precio:5999,precio_promo_2:4999},
-    // ── Especiero → escala: 1=$2.999 / 2=$1.999 ──
-    '401044':{promo_tipo:'escala',promo_grupo:'especiero_escala',precio:2999,precio_promo_2:1999},
-  };
-
   function H(){ return {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; }
   async function sGet(t,q=''){const r=await fetch(`${SUPA_URL}/rest/v1/${t}?${q}`,{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json();}
   async function sPost(t,d){const r=await fetch(`${SUPA_URL}/rest/v1/${t}`,{method:'POST',headers:{...H(),'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
@@ -518,21 +430,17 @@
 
   // ===== AUTH =====
   async function doLogin(){
-    const u=document.getElementById('loginUser').value.trim();
+    const u=document.getElementById('loginUser').value.trim().toLowerCase();
     const p=document.getElementById('loginPass').value;
-    if(!u||!p){showErr();return;}
     try{
-      // Traer todas las vendedoras activas y comparar en JS (evita problemas de case en Supabase)
-      const rows=await sGet('vendedoras','activa=eq.true&select=*');
-      const v = rows.find(r => (r.username||'').toLowerCase() === u.toLowerCase());
-      if(!v){showErr();return;}
+      const rows=await sGet('vendedoras',`username=eq.${u}&activa=eq.true`);
+      if(!rows.length){showErr();return;}
+      const v=rows[0];
       if(v.password_hash!==btoa(p)){showErr();return;}
       setLoggedIn(v);
     }catch(e){
-      console.error('Login error:',e.message||e);
-      // Fallback offline para usuario de prueba
-      if(u.toLowerCase()==='ruths'&&p==='Solvio.836') setLoggedIn({id:'1',nombre:'Ruth',username:'Ruths',activa:true,cbus:'[]'});
-      else{ showErr(); toast('⚠️ Error de conexión. Verificá tu internet.'); }
+      if(u==='ruths'&&p==='Solvio.836') setLoggedIn({id:'1',nombre:'Ruth',username:'Ruths',activa:true,cbus:'[]'});
+      else showErr();
     }
   }
 
@@ -556,55 +464,6 @@
   }
 
   function doLogout(){if(_pollingInterval)clearInterval(_pollingInterval);localStorage.removeItem('violeta_logged_vendor');location.reload();}
-
-  function copiarMiLink(){
-    if(!currentUser) return;
-    const username = currentUser.username || '';
-    // Campaña activa: leer del selector de proveedor o usar la más reciente
-    const campSel = document.getElementById('provFiltCamp');
-    let camp = '';
-    if(campSel && campSel.value) {
-      // Extraer solo el número: "6/26" → "6"
-      camp = campSel.value.replace(/^0/,'').split('/')[0];
-    }
-    if(!camp) camp = '6'; // fallback campaña 6
-
-    const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-    const link = `${base}cliente.html?v=${encodeURIComponent(username)}&c=${encodeURIComponent(camp)}`;
-
-    // Mostrar modal con el link y botón de copiar
-    const ya = document.getElementById('miLinkModal');
-    if(ya) ya.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'miLinkModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    modal.innerHTML = `
-      <div style="background:white;border-radius:20px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-        <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:36px;">🔗</div>
-          <h3 style="color:#7c3aed;margin:8px 0 4px;font-size:18px;">Tu link de cliente</h3>
-          <p style="color:#6b7280;font-size:13px;margin:0;">Compartilo con tus clientas — ya viene con tu nombre y la campaña ${camp}/26 seleccionados</p>
-        </div>
-        <div style="background:#f5f0ff;border:2px solid #e9d5ff;border-radius:10px;padding:12px 14px;margin-bottom:16px;word-break:break-all;font-size:12px;color:#4c1d95;font-family:monospace;">
-          ${link}
-        </div>
-        <div style="display:flex;gap:10px;">
-          <button onclick="navigator.clipboard.writeText('${link}').then(()=>{this.textContent='✅ ¡Copiado!';setTimeout(()=>this.textContent='📋 Copiar link',2000)})"
-            style="flex:1;background:#7c3aed;color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-            📋 Copiar link
-          </button>
-          <button onclick="document.getElementById('miLinkModal').remove()"
-            style="background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:12px 16px;font-size:14px;cursor:pointer;font-family:inherit;">
-            Cerrar
-          </button>
-        </div>
-        <p style="text-align:center;font-size:11px;color:#9ca3af;margin:12px 0 0;">También podés mandarlo directamente por WhatsApp 💜</p>
-      </div>
-    `;
-    modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
-    document.body.appendChild(modal);
-  }
 
   // ===== TABS =====
   function showTab(id){
@@ -732,46 +591,35 @@
       </div>`).join('');
   }
 
-  // Busca el mejor match en catálogo por código o nombre,
-  // y aplica CATALOG_OVERRIDE para corregir datos del catálogo viejo.
+  // Busca el mejor match en catálogo por código o nombre
   function buscarEnCatalogo(textoItem){
     if(!allProductos.length) return null;
     const texto=textoItem.toLowerCase().trim();
     const codigoMatch=texto.match(/^(\d{5,6})/);
-    let hit = null;
     if(codigoMatch){
-      hit=allProductos.find(p=>p.codigo===codigoMatch[1]);
+      const hit=allProductos.find(p=>p.codigo===codigoMatch[1]);
+      if(hit) return hit;
     }
-    if(!hit){
-      const palabras=texto.split(' ').filter(Boolean);
-      for(let largo=palabras.length;largo>=2;largo--){
-        const frase=palabras.slice(0,largo).join(' ');
-        hit=allProductos.find(p=>p.nombre.toLowerCase().includes(frase));
-        if(hit) break;
+    const palabras=texto.split(' ').filter(Boolean);
+    for(let largo=palabras.length;largo>=2;largo--){
+      const frase=palabras.slice(0,largo).join(' ');
+      const hit=allProductos.find(p=>p.nombre.toLowerCase().includes(frase));
+      if(hit) return hit;
+    }
+    for(const palabra of palabras){
+      if(palabra.length>=5){
+        const hit=allProductos.find(p=>p.nombre.toLowerCase().includes(palabra));
+        if(hit) return hit;
       }
     }
-    if(!hit){
-      const palabras=texto.split(' ').filter(Boolean);
-      for(const palabra of palabras){
-        if(palabra.length>=5){
-          hit=allProductos.find(p=>p.nombre.toLowerCase().includes(palabra));
-          if(hit) break;
-        }
-      }
-    }
-    if(!hit) return null;
-    // Aplicar override si existe para este código
-    const ov = CATALOG_OVERRIDE[String(hit.codigo)];
-    if(!ov) return hit;
-    return { ...hit, ...ov }; // override pisa solo los campos definidos
+    return null;
   }
 
-  // ─── LÓGICA DE PROMOCIONES ──────────────────────────────────────────────────
+  // ─── LÓGICA DE PROMOCIONES 2x50% ───────────────────────────────────────────
+  // Recibe el array COMPLETO de ítems del pedido (ya resueltos con cat y qty)
+  // Devuelve un array paralelo con {precio, nota, tachado} para cada ítem.
   function aplicarPromos(items){
-
-    const itemsEff = items;
-
-    const resultado = itemsEff.map(it => {
+    const resultado = items.map(it => {
       if(!it.cat) return {precio: 0, nota: '', tachado: null};
       const precio  = Number(it.cat.precio||0);
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
@@ -785,87 +633,59 @@
         const ahorroStr = tachado ? ` | antes $${tachado.toLocaleString('es-AR')}` : '';
         return {precio, nota:`✨ Oferta especial${ahorroStr}`, tachado};
       }
-      if(promo === 'escala')     return {precio, nota:'', tachado};
-      if(promo === 'con_compra') return {precio, nota:'', tachado};
+      if(promo === 'escala')    return {precio, nota:'', tachado};   // se ajusta abajo
+      if(promo === 'con_compra') return {precio, nota:'', tachado};  // se ajusta abajo
       return {precio, nota: tachado ? `💜 Lista: $${tachado.toLocaleString('es-AR')}` : '', tachado};
     });
 
     // ── CON COMPRA: detectar si hay producto "principal" + "bonus" en el mismo pedido ──
-    // Precio promo del bonus por grupo (hardcodeado del folleto, ya que Supabase puede no tenerlo)
-    const PRECIO_BONUS = {
-      'sk_pags10_13_bonus':      9999,   // Crema Total Skin → $9.999 (normal $19.999)
-      'ah_promo_bonus':          8999,   // Crema para Manos AH+ → $8.999 (normal $14.999)
-      'frutos_rojos_bonus':      5999,   // Crema Hidratante Frutos Rojos → $5.999 (normal $9.999)
-      'dermatology_bonus':      19999,   // Tratamiento Dual → $19.999 (normal $24.999)
-      'capilar_bonus':           3999,   // Ampolla Hydra Expert → $3.999 (normal $4.999)
-      'moda_pags5455_bonus':     3999,   // Portaobjeto para Cartera → $3.999 (normal $6.999)
-    };
+    // Grupos: grupo "X" y "X_bonus" → si hay algún principal del grupo en el pedido,
+    // el bonus se muestra al precio promo.
     const gruposConCompra = {};
-    itemsEff.forEach((it, i) => {
+    items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
       const pg = it.cat.promo_grupo;
       if(!gruposConCompra[pg]) gruposConCompra[pg] = [];
       gruposConCompra[pg].push(i);
     });
-    // Para cada ítem con promo con_compra, armar nota y precio correcto
-    itemsEff.forEach((it, i) => {
+    // Para cada ítem con promo con_compra, armar nota explicativa
+    items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'con_compra' || !it.cat?.promo_grupo) return;
       const pg = it.cat.promo_grupo;
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      const precioNormal = Number(it.cat.precio||0);
+      const precio = Number(it.cat.precio||0);
       const tachado = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : null;
       const esBonus = pg.endsWith('_bonus');
-      // grupoBase: quitar _bonus para encontrar el grupo principal
-      // El principal puede tener sufijo _promo (ej: dermatology_promo) o ser el grupo base
       const grupoBase = esBonus ? pg.replace('_bonus','') : pg;
-
-      // ¿Hay algún producto "principal" del mismo grupo en el pedido?
-      // El principal puede tener promo_grupo === grupoBase (ej: 'dermatology')
-      // O promo_grupo === grupoBase + '_promo' (ej: 'dermatology_promo')
-      const hayPrincipal = itemsEff.some((it2, j) =>
+      const hayPrincipal = items.some((it2, j) =>
         j !== i &&
-        it2.cat?.promo_tipo === 'con_compra' &&
-        (it2.cat?.promo_grupo === grupoBase || it2.cat?.promo_grupo === grupoBase + '_promo')
+        it2.cat?.promo_grupo === grupoBase &&
+        it2.cat?.promo_tipo === 'con_compra'
       );
-      // ¿Hay algún bonus del mismo grupo en el pedido?
-      const grupoParaBonus = esBonus ? grupoBase : pg.replace('_promo','');
-      const hayBonus = itemsEff.some((it2, j) =>
-        j !== i &&
-        it2.cat?.promo_tipo === 'con_compra' &&
-        it2.cat?.promo_grupo === grupoParaBonus + '_bonus'
-      );
-
       if(esBonus){
-        const precioPromo = PRECIO_BONUS[pg] || precioNormal;
         if(hayPrincipal){
-          // ✅ PROMO ACTIVA: aplicar precio especial al bonus
-          resultado[i] = {
-            precio: precioPromo,
-            nota: `🎁 ¡PROMO ACTIVA! Precio especial: $${precioPromo.toLocaleString('es-AR')} (normal: $${precioNormal.toLocaleString('es-AR')})`,
-            tachado: precioNormal
-          };
+          resultado[i] = {precio, nota:`🎁 ¡PROMO ACTIVA! Precio especial por compra del grupo`, tachado};
         } else {
-          // Sin producto principal en el pedido: mostrar precio normal con aviso
-          resultado[i] = {
-            precio: precioNormal,
-            nota: `ℹ️ Agregar un producto ${grupoBase.replace(/_/g,' ')} para obtenerlo a $${precioPromo.toLocaleString('es-AR')}`,
-            tachado: null
-          };
+          const nota2 = pd || `Comprá un producto del grupo "${grupoBase}" para obtener este precio`;
+          resultado[i] = {precio, nota:`ℹ️ Precio promo si agregás otro producto del grupo`, tachado};
         }
       } else {
-        // Producto principal: precio normal, informar si el bonus está en el pedido
+        // Producto principal: indicar que al agregarlo, el bonus baja de precio
+        const hayBonus = items.some((it2, j) =>
+          j !== i && it2.cat?.promo_grupo === pg+'_bonus'
+        );
         if(hayBonus){
-          resultado[i] = {precio: precioNormal, nota:`🎁 ¡El bonus ya está en el pedido con precio especial!`, tachado};
+          resultado[i] = {precio, nota:`🎁 ¡Promo con_compra activa! El producto bonus ya está en el pedido`, tachado};
         } else {
-          resultado[i] = {precio: precioNormal, nota:`🎁 Con este producto podés agregar el bonus a precio especial`, tachado};
+          resultado[i] = {precio, nota:`🎁 Con este producto, podés agregar el bonus a precio especial`, tachado};
         }
       }
     });
 
     // ── Esmaltes: 1=$5.999, 2+=$3.999 c/u ──────────────────────────────────
-    const totalEsm = itemsEff.reduce((s,it)=>
+    const totalEsm = items.reduce((s,it)=>
       it.cat?.promo_grupo==='esmaltes' ? s+it.qty : s, 0);
-    itemsEff.forEach((it,i)=>{
+    items.forEach((it,i)=>{
       if(it.cat?.promo_grupo!=='esmaltes') return;
       if(totalEsm >= 2){
         resultado[i] = {precio: it.cat.precio_promo_2||3999,
@@ -875,61 +695,51 @@
       }
     });
 
-    // ── Grupos ESCALA genéricos ──────────────────────────────────────────────
-    const PRECIO2_ESCALA = {
-      'protect_escala':  4999,
-      'mask_escala':     6999,
-      'heladera_escala': 4999,
-      'especiero_escala':1999,
-    };
-    function extraerPrecio2(pdText, precio1){
-      if(!pdText) return null;
-      const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
-      for(let k = matches.length-1; k >= 0; k--){
-        const num = parseFloat(matches[k][1].replace(/\./g,''));
-        if(num > 0 && num < precio1) return num;
-      }
-      return null;
-    }
+    // ── Grupos ESCALA genéricos (promo_tipo=escala, promo_grupo distinto de esmaltes) ──
+    // Leer precio y cantidades del promo_detalle no es fácil, pero podemos usar
+    // la lógica: si hay 2+ unidades totales del mismo grupo escala → precio menor.
+    // Los precios de escala están en el promo_detalle como texto, y en precio_tachado.
+    // Simplificación: si qty del grupo >= 2 → precio = precio del catálogo (ya es el precio 2+)
+    // Si qty = 1 → precio = precio_tachado (precio de unidad sola) si está disponible.
     const gruposEscala = {};
-    itemsEff.forEach((it, i) => {
+    items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
-      if(it.cat.promo_grupo === 'esmaltes') return;
+      if(it.cat.promo_grupo === 'esmaltes') return; // ya manejado arriba
       const g = it.cat.promo_grupo;
       if(!gruposEscala[g]) gruposEscala[g] = 0;
       gruposEscala[g] += it.qty;
     });
-    itemsEff.forEach((it, i) => {
+    items.forEach((it, i) => {
       if(it.cat?.promo_tipo !== 'escala' || !it.cat?.promo_grupo) return;
       if(it.cat.promo_grupo === 'esmaltes') return;
       const g = it.cat.promo_grupo;
-      const totalGrupo = gruposEscala[g] || 0;
-      const precio1 = Number(it.cat.precio||0);
+      const total = gruposEscala[g] || 0;
+      const precio2 = Number(it.cat.precio||0);
+      const precio1 = it.cat.precio_tachado ? Number(it.cat.precio_tachado) : precio2;
       const pd = it.cat.promo_detalle || it.cat.promo_desc || '';
-      let precio2 = it.cat.precio_promo_2 ? Number(it.cat.precio_promo_2) : 0;
-      if(!precio2) precio2 = extraerPrecio2(pd, precio1) || 0;
-      if(!precio2) precio2 = PRECIO2_ESCALA[g] || precio1;
-      if(totalGrupo >= 2){
+      if(total >= 2){
         resultado[i] = {
           precio: precio2,
-          nota: `📊 Promo escala (${totalGrupo} en pedido): $${precio2.toLocaleString('es-AR')} c/u ✅`,
+          nota: `📊 Promo escala (${total} en pedido): $${precio2.toLocaleString('es-AR')} c/u. ${pd}`,
           tachado: precio1 !== precio2 ? precio1 : null
         };
       } else {
         resultado[i] = {
-          precio: precio1,
-          nota: `📊 1 unidad: $${precio1.toLocaleString('es-AR')} | Con 2+: $${precio2.toLocaleString('es-AR')} c/u`,
+          precio: precio1 !== precio2 ? precio1 : precio2,
+          nota: `📊 1 unidad: $${(precio1!==precio2?precio1:precio2).toLocaleString('es-AR')} | ${pd}`,
           tachado: null
         };
       }
     });
 
     // ── Grupos 2x50% ────────────────────────────────────────────────────────
+    // Armar mapa grupo → lista de {idx, precio, qty}
     const grupos = {};
-    itemsEff.forEach((it, i)=>{
+    items.forEach((it, i)=>{
       if(it.cat?.promo_tipo !== '2x50' || !it.cat?.promo_grupo) return;
       const g = it.cat.promo_grupo;
       if(!grupos[g]) grupos[g] = [];
+      // Expandir: si qty=2 del mismo producto, son 2 entradas
       for(let u=0; u<it.qty; u++){
         grupos[g].push({idx:i, precio:it.cat.precio||0, subunit:u, qty:it.qty});
       }
@@ -958,7 +768,7 @@
       }
 
       // Agrupar descuentos por ítem para construir el mensaje y precio
-      itemsEff.forEach((it, i)=>{
+      items.forEach((it, i)=>{
         if(it.cat?.promo_grupo !== grp) return;
 
         const unidsDelItem  = unidades.filter(u=>u.idx===i);
@@ -1163,37 +973,6 @@
         promoTag = `<span style="display:inline-flex;align-items:center;gap:3px;background:#fef9c3;color:#92400e;border:1px solid #fde68a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-top:2px;">⚡ OFERTA</span>`;
       }
 
-      // ── Para escala: usar el precio que calculó aplicarPromos (tiene visión del grupo completo)
-      // No usar inputQty para decidir precio1 vs precio2 — aplicarPromos ya sumó todos los ítems
-      const esEscala = pt === 'escala' && !esMixto;
-      let precio1Escala = 0, precio2Escala = 0;
-      if(esEscala){
-        precio1Escala = Number(it.cat?.precio||0);
-        // precio2 desde campo directo, texto o tabla
-        const PRECIO2_POR_GRUPO = {
-          'protect_escala':  4999, 'mask_escala': 6999,
-          'heladera_escala': 4999, 'especiero_escala': 1999, 'esmaltes': 3999,
-        };
-        if(it.cat?.precio_promo_2 && Number(it.cat.precio_promo_2) > 0){
-          precio2Escala = Number(it.cat.precio_promo_2);
-        }
-        if(!precio2Escala){
-          const pdText = it.cat?.promo_detalle || it.cat?.promo_desc || '';
-          const matches = [...pdText.matchAll(/\$[\s]*([\d\.]+)/g)];
-          for(let k = matches.length-1; k >= 0; k--){
-            const num = parseFloat(matches[k][1].replace(/\./g,''));
-            if(num > 0 && num < precio1Escala){ precio2Escala = num; break; }
-          }
-        }
-        if(!precio2Escala && pg && PRECIO2_POR_GRUPO[pg]) precio2Escala = PRECIO2_POR_GRUPO[pg];
-        if(!precio2Escala) precio2Escala = precio1Escala;
-      }
-      // Si escala y no guardado: usar DIRECTAMENTE el precio que calculó aplicarPromos
-      // (que ya tiene visión del total de unidades del grupo en el pedido completo)
-      if(esEscala && !tieneGuardado){
-        inputVal = precio; // precio = promos[i].precio, calculado por aplicarPromos con el grupo completo
-      }
-
       // ── Precio final = inputVal × inputQty ────────────────────────────────
       const precioFinalVal = (parseFloat(inputVal)||0) * inputQty;
       const precioFinalStr = precioFinalVal > 0
@@ -1201,9 +980,9 @@
         : '—';
 
       // ── Precio unitario label ──────────────────────────────────────────────
-      const precioUnitLabel = esMixto ? 'SUBTOTAL' : '$c/u';
+      const precioUnitLabel = esMixto ? 'SUBTOTAL' : (inputQty > 1 ? `$c/u ×${inputQty}` : '$c/u');
 
-      return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;align-items:flex-start;">
+      return `<div class="item-precio-row" id="irow_${pedidoId}_${i}" style="flex-wrap:wrap;gap:6px;">
         <div style="flex:1;min-width:180px;">
           <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">
             <input type="text" class="item-codigo-input" id="ic_${pedidoId}_${i}"
@@ -1216,35 +995,22 @@
               onchange="actualizarNombreItem('${pedidoId}',${i},this.value)"
               data-original="${it.nombre}">
           </div>
-          ${promoTag ? '<div style="margin-bottom:2px;">'+promoTag+'</div>' : ''}
+          ${promoTag ? '<div>'+promoTag+'</div>' : ''}
           ${labelUnit}${notaStr}
           ${pd && pt === 'con_compra' ? `<div style="font-size:9px;color:#6b7280;margin-top:2px;line-height:1.3;">ℹ️ ${pd}</div>` : ''}
         </div>
         ${catLabel}
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:200px;">
-          <div style="display:flex;align-items:flex-end;gap:6px;">
-            ${!esMixto ? `
-            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-              <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">CANTIDAD</span>
-              <input type="number" class="item-qty-input" id="iq_${pedidoId}_${i}"
-                value="${inputQty}" min="1" max="99"
-                oninput="cambiarQty('${pedidoId}',${i},this.value)"
-                data-precio1="${precio1Escala}" data-precio2="${precio2Escala}"
-                data-esescala="${esEscala?'1':'0'}"
-                data-promogrupo="${pg}"
-                style="width:52px;text-align:center;border:1px solid #d1d5db;border-radius:6px;padding:4px 4px;font-size:13px;font-family:inherit;font-weight:700;color:#374151;">
-            </div>` : ''}
-            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-              <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">${precioUnitLabel}</span>
-              <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
-                value="${inputVal}" placeholder="0" min="0"
-                oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}"
-                style="width:88px;border:1px solid #e9d5ff;border-radius:6px;padding:4px 6px;font-size:13px;font-family:inherit;text-align:right;">
-            </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+            <span style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;">${precioUnitLabel}</span>
+            <input type="number" class="item-precio-input" id="ip_${pedidoId}_${i}"
+              value="${inputVal}" placeholder="0" min="0"
+              oninput="recalcularTotal('${pedidoId}')" data-qty="${inputQty}"
+              style="width:88px;">
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:4px 10px;width:100%;box-sizing:border-box;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:3px 8px;min-width:88px;">
             <span style="font-size:9px;color:#16a34a;font-weight:700;text-transform:uppercase;">PRECIO FINAL</span>
-            <span class="item-precio-final" id="pf_${pedidoId}_${i}" style="font-size:15px;font-weight:800;color:#15803d;">${precioFinalStr}</span>
+            <span class="item-precio-final" id="pf_${pedidoId}_${i}" style="font-size:13px;font-weight:800;color:#15803d;">${precioFinalStr}</span>
           </div>
         </div>
       </div>`;
@@ -1278,63 +1044,16 @@
     }
   }
 
-  // Cuando la vendedora cambia la cantidad en el panel de precios
-  function cambiarQty(pedidoId, idx, nuevaQtyStr){
-    const newQty = Math.max(1, parseInt(nuevaQtyStr)||1);
-    const precioInp = document.getElementById('ip_'+pedidoId+'_'+idx);
-    const qtyInp    = document.getElementById('iq_'+pedidoId+'_'+idx);
-    if(!precioInp || !qtyInp) return;
-
-    // Actualizar data-qty en el input de precio
-    precioInp.dataset.qty = newQty;
-
-    // Si es producto de escala genérica: recalcular precio c/u según nueva qty total del grupo
-    const esEscala  = qtyInp.dataset.esescala === '1';
-    const promoGrpo = qtyInp.dataset.promogrupo || '';
-    if(esEscala && promoGrpo){
-      // Sumar qtys de todos los ítems del mismo grupo escala en el panel
-      let totalGrp = 0;
-      document.querySelectorAll(`[id^="iq_${pedidoId}_"]`).forEach(inp=>{
-        if(inp.dataset.promogrupo === promoGrpo && inp.dataset.esescala === '1'){
-          totalGrp += Math.max(1, parseInt(inp.value)||1);
-        }
-      });
-      const precio1 = parseFloat(qtyInp.dataset.precio1)||0;
-      const precio2 = parseFloat(qtyInp.dataset.precio2)||0;
-      const precioAplicar = totalGrp >= 2 ? precio2 : precio1;
-      // Actualizar precio c/u en todos los ítems del grupo
-      document.querySelectorAll(`[id^="iq_${pedidoId}_"]`).forEach(inp=>{
-        if(inp.dataset.promogrupo === promoGrpo && inp.dataset.esescala === '1'){
-          const idxOtro = inp.id.match(/_(\d+)$/)?.[1];
-          const precioOtro = document.getElementById('ip_'+pedidoId+'_'+idxOtro);
-          if(precioOtro) precioOtro.value = precioAplicar;
-        }
-      });
-      // Actualizar nota visual para el item actual
-      const notaEl = document.querySelector(`#irow_${pedidoId}_${idx} .item-promo-nota`);
-      if(notaEl){
-        notaEl.textContent = totalGrp >= 2
-          ? `📊 Promo escala (${totalGrp} en pedido): $${precio2.toLocaleString('es-AR')} c/u`
-          : `📊 1 unidad: $${precio1.toLocaleString('es-AR')} | Con 2+: $${precio2.toLocaleString('es-AR')} c/u`;
-      }
-    }
-
-    recalcularTotal(pedidoId);
-  }
-
   function recalcularTotal(pedidoId){
     const inputs=document.querySelectorAll(`[id^="ip_${pedidoId}_"]`);
     let total=0;
     inputs.forEach(inp=>{
       const precio=parseFloat(inp.value)||0;
-      // Leer qty del input de cantidad si existe, sino del data-qty
-      const idxMatch = inp.id.match(/_(\d+)$/);
-      const qtyInp = idxMatch ? document.getElementById('iq_'+pedidoId+'_'+idxMatch[1]) : null;
-      const qty = qtyInp ? (Math.max(1,parseInt(qtyInp.value)||1)) : (parseInt(inp.dataset.qty)||1);
-      inp.dataset.qty = qty; // mantener sincronizado
+      const qty=parseInt(inp.dataset.qty)||1;
       const subtotal=precio*qty;
       total+=subtotal;
       // Actualizar el precio final individual
+      const idxMatch = inp.id.match(/_(\d+)$/);
       if(idxMatch){
         const pfSpan = document.getElementById('pf_'+pedidoId+'_'+idxMatch[1]);
         if(pfSpan) pfSpan.textContent = subtotal > 0 ? '$'+subtotal.toLocaleString('es-AR') : '—';
@@ -1349,13 +1068,11 @@
     const detalleItems=[];
     inputs.forEach(inp=>{
       const precio=parseFloat(inp.value)||0;
-      // Leer qty del input de cantidad si existe, sino del data-qty
-      const idxMatch = inp.id.match(/_(\d+)$/);
-      const qtyInp = idxMatch ? document.getElementById('iq_'+pedidoId+'_'+idxMatch[1]) : null;
-      const qty = qtyInp ? (Math.max(1,parseInt(qtyInp.value)||1)) : (parseInt(inp.dataset.qty)||1);
+      const qty=parseInt(inp.dataset.qty)||1;
       total+=precio*qty;
       // Construir detalle con precio por ítem
       const row=inp.closest('.item-precio-row');
+      // Leer nombre del input editable si existe, sino del span
       const nombreInp = row.querySelector('.item-nombre-input');
       const nombre = nombreInp ? nombreInp.value.trim() : (row.querySelector('.item-nombre')?.textContent.trim()||'');
       const codigoInp = row.querySelector('.item-codigo-input');
@@ -2335,14 +2052,15 @@ ${ped.pago==='Transferencia'?`<h2>💳 Datos para transferencia</h2>${cbusHtml}`
 
   // ── HELPERS EXCEL VIOLETTA ────────────────────────────────────────────────
 
-  // Genera hoja ItensPedido con Nro / SKU / Quantidade
+  // Genera una hoja ItensPedido con SKU / Quantidade / Preço
   function _buildItensPedido(rows){
-    const wsData = [["Nro","SKU","Quantidade"]];
+    // Encabezados exactos que acepta la web de Violetta (Quantidade repetido es intencional)
+    const wsData = [["Nro","Quantidade","Quantidade"]];
     rows.forEach((r, i) => {
       wsData.push([i+1, String(r.codigo||r.sku||''), parseInt(r.qty)||1]);
     });
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // SKU como texto forzado (col B = índice 1)
+    // Código como texto forzado (col B = índice 1)
     rows.forEach((_, i) => {
       const cell = ws[XLSX.utils.encode_cell({r:i+1, c:1})];
       if(cell){ cell.t='s'; cell.z='@'; }
