@@ -1,6 +1,6 @@
 <!--
 ================================================================================
-  Violetta Seller — Sistema de gestión de pedidos para vendedoras directas
+  MiCatalogApp — Sistema de gestión de pedidos para vendedoras directas
   © 2026 Carlos Caceres. Todos los derechos reservados.
   Proyecto Alpha v1.0.0
   Queda prohibida la reproducción total o parcial sin autorización expresa.
@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Violetta Seller — Admin</title>
+  <title>MiCatalogApp — Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#0e0a14;--surface:#1a1425;--surface2:#231a33;--border:#2e2040;--accent:#c084fc;--accent2:#818cf8;--accent3:#f472b6;--gold:#fbbf24;--text:#f0e8ff;--text2:#9b86c8;--text3:#5e4d7a;--danger:#f87171;--success:#4ade80;--warning:#fb923c;}
@@ -142,7 +142,7 @@
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <div class="login-badge">🔐 Root</div>
-    <h1 class="login-title">Panel Admin<br>Violetta Seller</h1>
+    <h1 class="login-title">Panel Admin<br>MiCatalogApp</h1>
     <p class="login-sub">Acceso exclusivo para administradores</p>
     <div class="field"><label>Usuario</label><input type="text" id="lu" placeholder="root" autocomplete="username"></div>
     <div class="field"><label>Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
@@ -153,7 +153,7 @@
 
 <div class="app" id="appWrap">
   <aside class="sidebar">
-    <div class="logo"><div class="logo-text">💜 Violetta Seller</div><div class="logo-sub">Admin Root</div></div>
+    <div class="logo"><div class="logo-text">💜 MiCatalogApp</div><div class="logo-sub">Admin Root</div></div>
     <nav class="nav">
       <div class="nav-item active" onclick="showSec('dashboard')" data-s="dashboard"><span class="icon">📊</span>Dashboard</div>
       <div class="nav-item" onclick="showSec('pedidos')" data-s="pedidos"><span class="icon">📦</span>Pedidos</div>
@@ -273,7 +273,7 @@
       <div class="card">
         <div class="card-head">
           <span class="card-title">📊 Importar catálogo desde Excel</span>
-          <span style="font-size:11px;color:var(--text3);">Subí el .xlsx con el formato de Violetta Seller</span>
+          <span style="font-size:11px;color:var(--text3);">Subí el .xlsx con el formato de MiCatalogApp</span>
         </div>
         <div style="padding:20px;">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -469,10 +469,10 @@ function toast(msg,type=''){const t=document.getElementById('toast');t.textConte
 
 function doLogin(){
   const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
-  if(u===ROOT.user&&p===ROOT.pass){localStorage.setItem('va_root','1');document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='block';initCfg();cargarTodo();}
+  if(u===ROOT.user&&p===ROOT.pass){localStorage.setItem('mca_root','1');document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='block';initCfg();cargarTodo();}
   else{const e=document.getElementById('lErr');e.style.display='block';setTimeout(()=>e.style.display='none',3000);}
 }
-function doLogout(){localStorage.removeItem('va_root');location.reload();}
+function doLogout(){localStorage.removeItem('mca_root');location.reload();}
 
 function showSec(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -873,7 +873,7 @@ function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlC
     ws['!cols'] = [{wch:10},{wch:60},{wch:12},{wch:15},{wch:18},{wch:50},{wch:22},{wch:14},{wch:10}];
     XLSX.utils.book_append_sheet(wb, ws, 'Productos X-XX');
     const wi = XLSX.utils.aoa_to_sheet([
-      ['FORMATO PARA IMPORTAR CATÁLOGO — VIOLETTA SELLER'],[''],
+      ['FORMATO PARA IMPORTAR CATÁLOGO — MICATALOGAPP'],[''],
       ['Columnas obligatorias:'],
       ['codigo','Código numérico 5-6 dígitos. OBLIGATORIO.'],
       ['nombre','Nombre completo del producto. OBLIGATORIO.'],
@@ -894,7 +894,7 @@ function copiarSQL(){navigator.clipboard.writeText(document.getElementById('sqlC
 function cerrarModal(id){document.getElementById(id).classList.remove('open');}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-bg'))cerrarModal(e.target.id);});
 
-if(localStorage.getItem('va_root')==='1'){
+if(localStorage.getItem('mca_root')==='1'){
   document.getElementById('loginWrap').style.display='none';
   document.getElementById('appWrap').style.display='block';
   initCfg();cargarTodo();
@@ -941,7 +941,7 @@ function imprimirReporteAdmin(){
     <td class="right bold green">${d.total?'$'+d.total.toLocaleString('es-AR'):'—'}</td></tr>`).join('');
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>Reporte Admin — Violetta Seller</title>
+<title>Reporte Admin — MiCatalogApp</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -965,7 +965,7 @@ function imprimirReporteAdmin(){
 </head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ Violetta Seller<span>.</span></div>
+    <div class="logo">♦ MiCatalogApp<span>.</span></div>
     <div style="margin-top:6px;font-size:13px;color:#6b21a8;">Panel Administrador</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -993,7 +993,7 @@ function imprimirReporteAdmin(){
   <tbody>${vendRows}</tbody>
 </table>
 
-<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}</div>
+<div class="footer">Reporte generado por el sistema de pedidos de <strong>MiCatalogApp</strong> · ${fecha}</div>
 <br>
 <div style="text-align:center;">
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
@@ -1001,7 +1001,7 @@ function imprimirReporteAdmin(){
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Seller
+  CHANGELOG — MiCatalogApp
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1267,7 +1267,7 @@ function imprimirAdminProveedor(){
 </head><body>
 <div class="header">
   <div>
-    <div class="logo">♦ Violetta Seller<span>.</span></div>
+    <div class="logo">♦ MiCatalogApp<span>.</span></div>
     <div style="margin-top:6px;font-size:13px;font-weight:700;">Panel Administrador</div>
   </div>
   <div style="text-align:right;font-size:13px;color:#6b21a8;">
@@ -1287,7 +1287,7 @@ function imprimirAdminProveedor(){
   </tr></thead>
   <tbody>${rowsHtml}</tbody>
 </table>
-<div class="footer">Reporte generado por el sistema de pedidos de <strong>Violetta Seller</strong> · ${fecha}</div>
+<div class="footer">Reporte generado por el sistema de pedidos de <strong>MiCatalogApp</strong> · ${fecha}</div>
 <br>
 <div style="text-align:center;">
   <button onclick="window.print()" style="background:#7c3aed;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Imprimir / Guardar PDF</button>
@@ -1295,7 +1295,7 @@ function imprimirAdminProveedor(){
 </div>
 </body><!--
 ================================================================================
-  CHANGELOG — Violetta Seller
+  CHANGELOG — MiCatalogApp
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
@@ -1349,7 +1349,7 @@ function imprimirAdminProveedor(){
 </body>
 <!--
 ================================================================================
-  CHANGELOG — Violetta Seller
+  CHANGELOG — MiCatalogApp
   © 2026 Carlos Caceres — Proyecto Alpha v1.0.0
 ================================================================================
 
