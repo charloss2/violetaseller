@@ -454,7 +454,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const ROOT={user:'root',pass:'Root.415263'};
+const ROOT_USER = 'root';
+const ROOT_HASH = 'e2ff472ee6806ad10480db6a306cf4c05c654b936f989f1a40f9c9d401b66ec8';
+async function hashPass(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 const SU='https://yafxocedtrktdrplpvie.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhZnhvY2VkdHJrdGRycGxwdmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjgwMDYsImV4cCI6MjA5MDY0NDAwNn0.arzPAHqrGv9-YH_OUJ5vO07f_0ZLsoMspnPlfvLNa3M';
 let allPeds=[],allVends=[],allClis=[],allProds=[];
@@ -467,10 +472,19 @@ async function sDel(t,id){const r=await fetch(`${SU}/rest/v1/${t}?id=eq.${id}`,{
 
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3000);}
 
-function doLogin(){
-  const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
-  if(u===ROOT.user&&p===ROOT.pass){localStorage.setItem('mca_root','1');document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='block';initCfg();cargarTodo();}
-  else{const e=document.getElementById('lErr');e.style.display='block';setTimeout(()=>e.style.display='none',3000);}
+async function doLogin(){
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value;
+  if(!u||!p){const e=document.getElementById('lErr');e.style.display='block';setTimeout(()=>e.style.display='none',3000);return;}
+  const h = await hashPass(p);
+  if(u===ROOT_USER && h===ROOT_HASH){
+    localStorage.setItem('mca_root','1');
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('appWrap').style.display='block';
+    initCfg();cargarTodo();
+  } else {
+    const e=document.getElementById('lErr');e.style.display='block';setTimeout(()=>e.style.display='none',3000);
+  }
 }
 function doLogout(){localStorage.removeItem('mca_root');location.reload();}
 
